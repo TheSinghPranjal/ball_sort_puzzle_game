@@ -43,3 +43,30 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Android signing & secrets - never commit
+*.jks
+*.keystore
+*.p12
+*.pfx
+key.properties
+**/key.properties
+local.properties
+**/local.properties
+google-services.json
+GoogleService-Info.plist
+.env
+.env.*
+*.pem
+
+# Build outputs
+*.aab
+*.apk
+*.ipa
+**/android/.gradle/
+**/android/app/release/
+**/android/app/debug/
+**/android/app/profile/
+android/app/.cxx/
+.flutter-plugins
+.flutter-plugins-dependencies
