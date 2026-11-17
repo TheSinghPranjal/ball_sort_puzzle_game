@@ -65,10 +65,15 @@ class AudioPlayersService implements AudioService {
     try {
       // Sound effects must mix with the music instead of stealing focus.
       await AudioPlayer.global.setAudioContext(
-        AudioContextConfig(focus: AudioContextConfigFocus.mixWithOthers).build(),
+        AudioContextConfig(
+          focus: AudioContextConfigFocus.mixWithOthers,
+        ).build(),
       );
       for (final e in _files.entries) {
-        _pools[e.key] = await AudioPool.createFromAsset(path: e.value, maxPlayers: 3);
+        _pools[e.key] = await AudioPool.createFromAsset(
+          path: e.value,
+          maxPlayers: 3,
+        );
       }
       final music = AudioPlayer(playerId: 'music');
       await music.setReleaseMode(ReleaseMode.loop);
@@ -86,17 +91,23 @@ class AudioPlayersService implements AudioService {
     if (!_settings().soundEnabled) return;
     final pool = _pools[sfx];
     if (pool == null) return;
-    unawaited(pool.start(volume: sfx == Sfx.lift ? 0.6 : 1.0).then((_) {}, onError: (_) {}));
+    unawaited(
+      pool
+          .start(volume: sfx == Sfx.lift ? 0.6 : 1.0)
+          .then((_) {}, onError: (_) {}),
+    );
   }
 
   @override
   void haptic(Haptic kind) {
     if (!_settings().vibrationEnabled) return;
-    unawaited(switch (kind) {
-      Haptic.light => HapticFeedback.lightImpact(),
-      Haptic.medium => HapticFeedback.mediumImpact(),
-      Haptic.success => HapticFeedback.heavyImpact(),
-    }.catchError((_) {}));
+    unawaited(
+      switch (kind) {
+        Haptic.light => HapticFeedback.lightImpact(),
+        Haptic.medium => HapticFeedback.mediumImpact(),
+        Haptic.success => HapticFeedback.heavyImpact(),
+      }.catchError((_) {}),
+    );
   }
 
   @override

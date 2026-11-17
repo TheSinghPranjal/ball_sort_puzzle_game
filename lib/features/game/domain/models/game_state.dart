@@ -4,23 +4,23 @@ import 'tube.dart';
 /// State that undo can restore exactly.
 class GameSnapshot {
   GameSnapshot({required List<Tube> tubes, required this.moveCount})
-      : tubes = List.unmodifiable(tubes);
+    : tubes = List.unmodifiable(tubes);
 
   final List<Tube> tubes;
   final int moveCount;
 
   Map<String, dynamic> toJson() => {
-        'm': moveCount,
-        't': [for (final t in tubes) t.toJson()],
-      };
+    'm': moveCount,
+    't': [for (final t in tubes) t.toJson()],
+  };
 
   factory GameSnapshot.fromJson(Map<String, dynamic> json) => GameSnapshot(
-        moveCount: json['m'] as int,
-        tubes: [
-          for (final t in json['t'] as List)
-            Tube.fromJson(Map<String, dynamic>.from(t as Map)),
-        ],
-      );
+    moveCount: json['m'] as int,
+    tubes: [
+      for (final t in json['t'] as List)
+        Tube.fromJson(Map<String, dynamic>.from(t as Map)),
+    ],
+  );
 }
 
 /// One-shot visual events the board animates. [seq] is unique and increasing
@@ -40,10 +40,15 @@ class BallMovedEvent extends BoardEvent {
     required this.ballId,
     required this.colorId,
     this.fromLifted = true,
-  });
+    List<int>? ballIds,
+  }) : ballIds = ballIds ?? const [];
   final int from;
   final int to;
   final int ballId;
+
+  /// Every ball that travelled, top-most first (empty means just [ballId]).
+  final List<int> ballIds;
+  List<int> get allBallIds => ballIds.isEmpty ? [ballId] : ballIds;
   final int colorId;
   final bool fromLifted;
 }
@@ -93,9 +98,9 @@ class GameState {
     this.events = const [],
     this.sessionId = 0,
     Set<int> revealedBallIds = const {},
-  })  : tubes = List.unmodifiable(tubes),
-        undoHistory = List.unmodifiable(undoHistory),
-        revealedBallIds = Set.unmodifiable(revealedBallIds);
+  }) : tubes = List.unmodifiable(tubes),
+       undoHistory = List.unmodifiable(undoHistory),
+       revealedBallIds = Set.unmodifiable(revealedBallIds);
 
   final LevelConfig level;
   final List<Tube> tubes;
@@ -133,7 +138,8 @@ class GameState {
   final Set<int> revealedBallIds;
 
   /// True when [ballId] should be drawn as a "?" ball.
-  bool isHidden(int ballId) => level.mystery && !revealedBallIds.contains(ballId);
+  bool isHidden(int ballId) =>
+      level.mystery && !revealedBallIds.contains(ballId);
 
   int get currentLevel => level.levelId;
   bool get canInteract =>
@@ -192,16 +198,14 @@ class GameState {
 
   /// Persisted form (animation/session flags are intentionally dropped).
   Map<String, dynamic> toSaveJson() => {
-        'level': level.levelId,
-        'tubes': [for (final t in tubes) t.toJson()],
-        'moves': moveCount,
-        'history': [
-          for (final s in undoHistory) s.toJson(),
-        ],
-        'undo': undoRemaining,
-        'shuffle': shuffleRemaining,
-        'add': addTubeRemaining,
-        'time': remainingSeconds,
-        'rev': revealedBallIds.toList(),
-      };
+    'level': level.levelId,
+    'tubes': [for (final t in tubes) t.toJson()],
+    'moves': moveCount,
+    'history': [for (final s in undoHistory) s.toJson()],
+    'undo': undoRemaining,
+    'shuffle': shuffleRemaining,
+    'add': addTubeRemaining,
+    'time': remainingSeconds,
+    'rev': revealedBallIds.toList(),
+  };
 }

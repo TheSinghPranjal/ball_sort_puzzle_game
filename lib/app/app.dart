@@ -12,7 +12,8 @@ class BallSortApp extends ConsumerStatefulWidget {
   ConsumerState<BallSortApp> createState() => _BallSortAppState();
 }
 
-class _BallSortAppState extends ConsumerState<BallSortApp> with WidgetsBindingObserver {
+class _BallSortAppState extends ConsumerState<BallSortApp>
+    with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
@@ -28,7 +29,9 @@ class _BallSortAppState extends ConsumerState<BallSortApp> with WidgetsBindingOb
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     final audio = ref.read(audioServiceProvider);
-    state == AppLifecycleState.resumed ? audio.onAppResumed() : audio.onAppPaused();
+    state == AppLifecycleState.resumed
+        ? audio.onAppResumed()
+        : audio.onAppPaused();
   }
 
   @override

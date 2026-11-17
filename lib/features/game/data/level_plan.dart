@@ -57,10 +57,13 @@ class LevelPlan {
   static LevelPlanEntry entry(int id) {
     final base = id >= legendStart ? _legend(id) : _base(id);
     final mystery = base.mystery || _mysteryFor(id);
-    final mechanic = base.newMechanic ??
+    final mechanic =
+        base.newMechanic ??
         (id == mysteryIntroLevel
             ? 'Mystery balls: hidden colors reveal when they reach the top'
-            : (base.capacity > 4 && id == 25 ? 'Special level: taller tubes' : null));
+            : (base.capacity > 4 && id == 25
+                  ? 'Special level: taller tubes'
+                  : null));
     if (mystery == base.mystery && mechanic == base.newMechanic) return base;
     return LevelPlanEntry(
       id: base.id,
@@ -80,7 +83,10 @@ class LevelPlan {
   /// Mystery levels in 1-500: introduced at 17, then every 5th level in the
   /// curated set and two in five afterwards (never on timed levels).
   static bool _mysteryFor(int id) {
-    if (id < mysteryIntroLevel || id >= legendStart || _timedLevels.contains(id)) return false;
+    if (id < mysteryIntroLevel ||
+        id >= legendStart ||
+        _timedLevels.contains(id))
+      return false;
     if (id <= 100) return id % 5 == 2;
     return id % 5 == 2 || id % 5 == 4;
   }
@@ -92,15 +98,23 @@ class LevelPlan {
       final band = id <= 40
           ? Difficulty.medium
           : id <= 60
-              ? Difficulty.hard
-              : id <= 80
-                  ? Difficulty.expert
-                  : Difficulty.master;
+          ? Difficulty.hard
+          : id <= 80
+          ? Difficulty.expert
+          : Difficulty.master;
       return LevelPlanEntry(
         id: id,
         difficulty: band,
-        spec: LevelSpec(colors: special, emptyTubes: 2, capacity: 6, maxRun: 2, quantile: 0.6),
-        fallbackSpecs: [LevelSpec(colors: special, emptyTubes: 2, capacity: 6, maxRun: 3)],
+        spec: LevelSpec(
+          colors: special,
+          emptyTubes: 2,
+          capacity: 6,
+          maxRun: 2,
+          quantile: 0.6,
+        ),
+        fallbackSpecs: [
+          LevelSpec(colors: special, emptyTubes: 2, capacity: 6, maxRun: 3),
+        ],
         moveTarget: id > 40,
       );
     }
@@ -156,9 +170,21 @@ class LevelPlan {
     if (id <= 20) {
       // Easy: 3-5 colors, 4-6 tubes.
       const layout = {
-        6: [3, 1], 7: [3, 2], 8: [3, 1], 9: [3, 2], 10: [4, 2],
-        11: [4, 2], 12: [4, 1], 13: [4, 2], 14: [4, 2], 15: [4, 1],
-        16: [4, 2], 17: [5, 1], 18: [4, 2], 19: [5, 1], 20: [4, 1],
+        6: [3, 1],
+        7: [3, 2],
+        8: [3, 1],
+        9: [3, 2],
+        10: [4, 2],
+        11: [4, 2],
+        12: [4, 1],
+        13: [4, 2],
+        14: [4, 2],
+        15: [4, 1],
+        16: [4, 2],
+        17: [5, 1],
+        18: [4, 2],
+        19: [5, 1],
+        20: [4, 1],
       };
       final l = layout[id]!;
       final t = _t(id, 6, 20);
@@ -195,7 +221,12 @@ class LevelPlan {
           quantile: 0.3 + 0.5 * t,
         ),
         fallbackSpecs: [
-          LevelSpec(colors: colors, emptyTubes: 2, maxRun: 2, requireSpreadColor: spread),
+          LevelSpec(
+            colors: colors,
+            emptyTubes: 2,
+            maxRun: 2,
+            requireSpreadColor: spread,
+          ),
         ],
         timed: _timedLevels.contains(id),
         newMechanic: spread
@@ -223,7 +254,9 @@ class LevelPlan {
         fallbackSpecs: [LevelSpec(colors: colors, emptyTubes: 2, maxRun: 2)],
         timed: _timedLevels.contains(id),
         moveTarget: true,
-        newMechanic: id == 41 ? 'Move targets: finish within the goal for 3 stars' : null,
+        newMechanic: id == 41
+            ? 'Move targets: finish within the goal for 3 stars'
+            : null,
       );
     }
 
@@ -244,7 +277,9 @@ class LevelPlan {
           quantile: 0.4 + 0.5 * t,
           candidates: 8,
         ),
-        fallbackSpecs: [LevelSpec(colors: colors, emptyTubes: 2, maxRun: 2, candidates: 8)],
+        fallbackSpecs: [
+          LevelSpec(colors: colors, emptyTubes: 2, maxRun: 2, candidates: 8),
+        ],
         timed: _timedLevels.contains(id),
         moveTarget: true,
       );
@@ -266,7 +301,9 @@ class LevelPlan {
           quantile: 0.5 + 0.45 * t,
           candidates: 8,
         ),
-        fallbackSpecs: [LevelSpec(colors: colors, emptyTubes: 2, maxRun: 2, candidates: 8)],
+        fallbackSpecs: [
+          LevelSpec(colors: colors, emptyTubes: 2, maxRun: 2, candidates: 8),
+        ],
         timed: _timedLevels.contains(id),
         moveTarget: true,
       );
@@ -281,8 +318,23 @@ class LevelPlan {
       return LevelPlanEntry(
         id: id,
         difficulty: Difficulty.master,
-        spec: LevelSpec(colors: colors, emptyTubes: 2, capacity: cap, maxRun: 2, quantile: 0.6, candidates: 4),
-        fallbackSpecs: [LevelSpec(colors: colors, emptyTubes: 2, capacity: cap, maxRun: 3, candidates: 2)],
+        spec: LevelSpec(
+          colors: colors,
+          emptyTubes: 2,
+          capacity: cap,
+          maxRun: 2,
+          quantile: 0.6,
+          candidates: 4,
+        ),
+        fallbackSpecs: [
+          LevelSpec(
+            colors: colors,
+            emptyTubes: 2,
+            capacity: cap,
+            maxRun: 3,
+            candidates: 2,
+          ),
+        ],
         moveTarget: true,
       );
     }
@@ -300,7 +352,13 @@ class LevelPlan {
         maxAttempts: 120,
       ),
       fallbackSpecs: [
-        LevelSpec(colors: colors, emptyTubes: 2, maxRun: 2, candidates: 1, maxAttempts: 400),
+        LevelSpec(
+          colors: colors,
+          emptyTubes: 2,
+          maxRun: 2,
+          candidates: 1,
+          maxAttempts: 400,
+        ),
       ],
       moveTarget: true,
     );
@@ -319,37 +377,111 @@ class LevelPlan {
   static LevelPlanEntry _legend(int id) {
     final t = (id - legendStart) / (1000 - legendStart);
     final quantile = 0.7 + 0.3 * t;
-    final mystery = t < 0.33 ? id % 3 == 0 : (t < 0.66 ? id.isEven : id % 5 != 0);
+    final mystery = t < 0.33
+        ? id % 3 == 0
+        : (t < 0.66 ? id.isEven : id % 5 != 0);
     final kind = id % 10;
     LevelSpec spec;
     List<LevelSpec> fallbacks;
     if (kind == 0) {
       final cap = t < 0.5 ? 8 : 10;
-      spec = LevelSpec(colors: 5, emptyTubes: 2, capacity: cap, maxRun: 2, minMoves: cap * 7,
-          quantile: quantile, candidates: 6, trapSamples: 10);
-      fallbacks = [LevelSpec(colors: 5, emptyTubes: 2, capacity: cap, maxRun: 3, candidates: 2)];
+      spec = LevelSpec(
+        colors: 5,
+        emptyTubes: 2,
+        capacity: cap,
+        maxRun: 2,
+        minMoves: cap * 7,
+        quantile: quantile,
+        candidates: 6,
+        trapSamples: 10,
+      );
+      fallbacks = [
+        LevelSpec(
+          colors: 5,
+          emptyTubes: 2,
+          capacity: cap,
+          maxRun: 3,
+          candidates: 2,
+        ),
+      ];
     } else if (kind == 5) {
       final colors = t < 0.5 ? 9 : 10;
-      spec = LevelSpec(colors: colors, emptyTubes: 2, capacity: 6, maxRun: 2, minMoves: 90,
-          quantile: quantile, candidates: 6, trapSamples: 10);
-      fallbacks = [LevelSpec(colors: colors, emptyTubes: 2, capacity: 6, maxRun: 2, candidates: 2)];
+      spec = LevelSpec(
+        colors: colors,
+        emptyTubes: 2,
+        capacity: 6,
+        maxRun: 2,
+        minMoves: 90,
+        quantile: quantile,
+        candidates: 6,
+        trapSamples: 10,
+      );
+      fallbacks = [
+        LevelSpec(
+          colors: colors,
+          emptyTubes: 2,
+          capacity: 6,
+          maxRun: 2,
+          candidates: 2,
+        ),
+      ];
     } else if (kind == 3 || kind == 7) {
       final colors = 8 + (t * 2.99).floor();
-      spec = LevelSpec(colors: colors, emptyTubes: 1, maxRun: 2, minMoves: 36,
-          quantile: quantile, candidates: 5, trapSamples: 10, maxAttempts: 4000);
+      spec = LevelSpec(
+        colors: colors,
+        emptyTubes: 1,
+        maxRun: 2,
+        minMoves: 36,
+        quantile: quantile,
+        candidates: 5,
+        trapSamples: 10,
+        maxAttempts: 4000,
+      );
       fallbacks = [
-        LevelSpec(colors: 8, emptyTubes: 1, maxRun: 2, candidates: 3, trapSamples: 10, maxAttempts: 4000),
+        LevelSpec(
+          colors: 8,
+          emptyTubes: 1,
+          maxRun: 2,
+          candidates: 3,
+          trapSamples: 10,
+          maxAttempts: 4000,
+        ),
         LevelSpec(colors: colors + 1, emptyTubes: 2, maxRun: 1, candidates: 3),
       ];
     } else if ((kind == 4 || kind == 8) && t > 0.6) {
-      spec = LevelSpec(colors: 10, emptyTubes: 2, capacity: 5, maxRun: 1, minMoves: 75,
-          quantile: quantile, candidates: 6, trapSamples: 10);
-      fallbacks = [const LevelSpec(colors: 10, emptyTubes: 2, capacity: 5, maxRun: 2, candidates: 2)];
+      spec = LevelSpec(
+        colors: 10,
+        emptyTubes: 2,
+        capacity: 5,
+        maxRun: 1,
+        minMoves: 75,
+        quantile: quantile,
+        candidates: 6,
+        trapSamples: 10,
+      );
+      fallbacks = [
+        const LevelSpec(
+          colors: 10,
+          emptyTubes: 2,
+          capacity: 5,
+          maxRun: 2,
+          candidates: 2,
+        ),
+      ];
     } else {
       final colors = t < 0.4 ? 11 : 12;
-      spec = LevelSpec(colors: colors, emptyTubes: 2, maxRun: 1, minMoves: 58,
-          quantile: quantile, candidates: 6, trapSamples: 10);
-      fallbacks = [LevelSpec(colors: colors, emptyTubes: 2, maxRun: 2, candidates: 2)];
+      spec = LevelSpec(
+        colors: colors,
+        emptyTubes: 2,
+        maxRun: 1,
+        minMoves: 58,
+        quantile: quantile,
+        candidates: 6,
+        trapSamples: 10,
+      );
+      fallbacks = [
+        LevelSpec(colors: colors, emptyTubes: 2, maxRun: 2, candidates: 2),
+      ];
     }
     return LevelPlanEntry(
       id: id,
@@ -358,7 +490,9 @@ class LevelPlan {
       fallbackSpecs: fallbacks,
       moveTarget: true,
       mystery: mystery,
-      newMechanic: id == legendStart ? 'Legend levels: brutal boards, little room for mistakes' : null,
+      newMechanic: id == legendStart
+          ? 'Legend levels: brutal boards, little room for mistakes'
+          : null,
     );
   }
 
@@ -369,14 +503,49 @@ class LevelPlan {
       e.moveTarget ? (par * 1.15).ceil() + 2 : null;
 
   static const _adjectives = [
-    'Violet', 'Neon', 'Silent', 'Cosmic', 'Velvet', 'Crystal', 'Lunar',
-    'Amber', 'Frozen', 'Twilight', 'Golden', 'Hidden', 'Electric', 'Misty',
-    'Radiant', 'Shadow', 'Starlit', 'Copper', 'Midnight', 'Polar',
+    'Violet',
+    'Neon',
+    'Silent',
+    'Cosmic',
+    'Velvet',
+    'Crystal',
+    'Lunar',
+    'Amber',
+    'Frozen',
+    'Twilight',
+    'Golden',
+    'Hidden',
+    'Electric',
+    'Misty',
+    'Radiant',
+    'Shadow',
+    'Starlit',
+    'Copper',
+    'Midnight',
+    'Polar',
   ];
   static const _nouns = [
-    'Drift', 'Orbit', 'Cascade', 'Prism', 'Garden', 'Harbor', 'Echo',
-    'Spiral', 'Comet', 'Meadow', 'Lantern', 'Tide', 'Nebula', 'Quartz',
-    'Canyon', 'Aurora', 'Ripple', 'Summit', 'Glacier', 'Vortex', 'Pulse',
+    'Drift',
+    'Orbit',
+    'Cascade',
+    'Prism',
+    'Garden',
+    'Harbor',
+    'Echo',
+    'Spiral',
+    'Comet',
+    'Meadow',
+    'Lantern',
+    'Tide',
+    'Nebula',
+    'Quartz',
+    'Canyon',
+    'Aurora',
+    'Ripple',
+    'Summit',
+    'Glacier',
+    'Vortex',
+    'Pulse',
   ];
 
   static String nameFor(int id) {

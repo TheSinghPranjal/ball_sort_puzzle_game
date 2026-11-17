@@ -54,7 +54,10 @@ class GlossyBallPainter extends CustomPainter {
       r,
       Paint()
         ..shader = RadialGradient(
-          colors: [const Color(0x00000000), spec.shadow.withValues(alpha: 0.55)],
+          colors: [
+            const Color(0x00000000),
+            spec.shadow.withValues(alpha: 0.55),
+          ],
           stops: const [0.72, 1.0],
         ).createShader(rect),
     );
@@ -107,7 +110,8 @@ class GlossyBallPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(GlossyBallPainter old) => old.spec != spec || old.glow != glow;
+  bool shouldRepaint(GlossyBallPainter old) =>
+      old.spec != spec || old.glow != glow;
 }
 
 class GlossyBallWidget extends StatelessWidget {
@@ -126,7 +130,9 @@ class GlossyBallWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox.square(
       dimension: diameter,
-      child: CustomPaint(painter: GlossyBallPainter(AppColors.ball(colorId), glow: glow)),
+      child: CustomPaint(
+        painter: GlossyBallPainter(AppColors.ball(colorId), glow: glow),
+      ),
     );
   }
 }
@@ -159,13 +165,22 @@ class MysteryBallPainter extends CustomPainter {
         ..color = const Color(0x66C9C2FF),
     );
     canvas.drawOval(
-      Rect.fromCenter(center: c + Offset(-r * 0.32, -r * 0.45), width: r * 0.7, height: r * 0.38),
+      Rect.fromCenter(
+        center: c + Offset(-r * 0.32, -r * 0.45),
+        width: r * 0.7,
+        height: r * 0.38,
+      ),
       Paint()..color = const Color(0x40FFFFFF),
     );
     final tp = TextPainter(
       text: TextSpan(
         text: '?',
-        style: TextStyle(color: Colors.white, fontSize: r * 1.15, fontWeight: FontWeight.w900, height: 1),
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: r * 1.15,
+          fontWeight: FontWeight.w900,
+          height: 1,
+        ),
       ),
       textDirection: TextDirection.ltr,
     )..layout();
@@ -182,7 +197,7 @@ class MysteryBallWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox.square(
-        dimension: diameter,
-        child: const CustomPaint(painter: MysteryBallPainter()),
-      );
+    dimension: diameter,
+    child: const CustomPaint(painter: MysteryBallPainter()),
+  );
 }

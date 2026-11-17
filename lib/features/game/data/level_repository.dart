@@ -24,8 +24,9 @@ class SyncRunner implements BackgroundRunner {
   Future<R> run<R>(R Function() computation) async => computation();
 }
 
-final backgroundRunnerProvider =
-    Provider<BackgroundRunner>((ref) => const IsolateRunner());
+final backgroundRunnerProvider = Provider<BackgroundRunner>(
+  (ref) => const IsolateRunner(),
+);
 
 /// All levels ship as solver-verified static data (see
 /// `tool/generate_levels.dart`), so loading is instant and fully offline.
@@ -49,7 +50,12 @@ class LevelRepository {
 
   Future<LevelConfig> getLevel(int id) async => curated(id);
 
-  static LevelConfig build(LevelPlanEntry e, List<List<int>> tubes, int par, int capacity) {
+  static LevelConfig build(
+    LevelPlanEntry e,
+    List<List<int>> tubes,
+    int par,
+    int capacity,
+  ) {
     return LevelConfig(
       levelId: e.id,
       name: LevelPlan.nameFor(e.id),

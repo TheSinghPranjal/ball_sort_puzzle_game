@@ -23,7 +23,10 @@ class _SpotlightPainter extends CustomPainter {
     for (final h in holes) {
       path = Path.combine(PathOperation.difference, path, Path()..addRRect(h));
     }
-    canvas.drawPath(path, Paint()..color = Colors.black.withValues(alpha: opacity));
+    canvas.drawPath(
+      path,
+      Paint()..color = Colors.black.withValues(alpha: opacity),
+    );
     final ring = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2
@@ -34,7 +37,8 @@ class _SpotlightPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_SpotlightPainter old) => old.holes != holes || old.opacity != opacity;
+  bool shouldRepaint(_SpotlightPainter old) =>
+      old.holes != holes || old.opacity != opacity;
 }
 
 /// Animated dashed arc with an arrowhead from [a] to [b].
@@ -46,7 +50,10 @@ class _ArrowPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final mid = Offset((a.dx + b.dx) / 2, math.min(a.dy, b.dy) - (b - a).distance * 0.35 - 20);
+    final mid = Offset(
+      (a.dx + b.dx) / 2,
+      math.min(a.dy, b.dy) - (b - a).distance * 0.35 - 20,
+    );
     final path = Path()
       ..moveTo(a.dx, a.dy)
       ..quadraticBezierTo(mid.dx, mid.dy, b.dx, b.dy);
@@ -71,8 +78,14 @@ class _ArrowPainter extends CustomPainter {
       canvas.drawPath(
         Path()
           ..moveTo(tip.dx, tip.dy)
-          ..lineTo((tip - dir * 16 + normal * 9).dx, (tip - dir * 16 + normal * 9).dy)
-          ..lineTo((tip - dir * 16 - normal * 9).dx, (tip - dir * 16 - normal * 9).dy)
+          ..lineTo(
+            (tip - dir * 16 + normal * 9).dx,
+            (tip - dir * 16 + normal * 9).dy,
+          )
+          ..lineTo(
+            (tip - dir * 16 - normal * 9).dx,
+            (tip - dir * 16 - normal * 9).dy,
+          )
           ..close(),
         Paint()..color = Colors.white,
       );
@@ -80,7 +93,8 @@ class _ArrowPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_ArrowPainter old) => old.phase != phase || old.a != a || old.b != b;
+  bool shouldRepaint(_ArrowPainter old) =>
+      old.phase != phase || old.a != a || old.b != b;
 }
 
 class _Hand extends StatelessWidget {
@@ -97,7 +111,9 @@ class _Hand extends StatelessWidget {
           Icons.touch_app_rounded,
           size: 54,
           color: Colors.white,
-          shadows: [Shadow(color: Colors.black54, blurRadius: 8, offset: Offset(0, 3))],
+          shadows: [
+            Shadow(color: Colors.black54, blurRadius: 8, offset: Offset(0, 3)),
+          ],
         ),
       ),
     );
@@ -121,7 +137,11 @@ class _Caption extends StatelessWidget {
       child: Text(
         text,
         textAlign: TextAlign.center,
-        style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700),
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }
@@ -152,7 +172,8 @@ class BoardTutorialOverlay extends ConsumerStatefulWidget {
   final BoardLayout layout;
 
   @override
-  ConsumerState<BoardTutorialOverlay> createState() => _BoardTutorialOverlayState();
+  ConsumerState<BoardTutorialOverlay> createState() =>
+      _BoardTutorialOverlayState();
 }
 
 class _BoardTutorialOverlayState extends ConsumerState<BoardTutorialOverlay>
@@ -162,8 +183,10 @@ class _BoardTutorialOverlayState extends ConsumerState<BoardTutorialOverlay>
   @override
   void initState() {
     super.initState();
-    _anim = AnimationController(vsync: this, duration: const Duration(milliseconds: 900))
-      ..repeat(reverse: true);
+    _anim = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
   }
 
   @override
@@ -176,7 +199,11 @@ class _BoardTutorialOverlayState extends ConsumerState<BoardTutorialOverlay>
   Widget build(BuildContext context) {
     final s = ref.watch(gameControllerProvider);
     final type = s?.level.tutorial;
-    final done = ref.watch(progressProvider.select((p) => type != null && p.tutorialCompleted(type.name)));
+    final done = ref.watch(
+      progressProvider.select(
+        (p) => type != null && p.tutorialCompleted(type.name),
+      ),
+    );
     if (s == null ||
         done ||
         s.isLevelCompleted ||
@@ -187,7 +214,11 @@ class _BoardTutorialOverlayState extends ConsumerState<BoardTutorialOverlay>
     if (l.columns.length < s.tubes.length) return const SizedBox.shrink();
     const rules = GameRulesService();
     final raw = GameRulesService.toRaw(s.tubes);
-    final hint = const PuzzleSolverService().nextHint(raw, s.level.tubeCapacity, nodeLimit: 2000);
+    final hint = const PuzzleSolverService().nextHint(
+      raw,
+      s.level.tubeCapacity,
+      nodeLimit: 2000,
+    );
     final selected = s.selectedTubeIndex;
 
     int? target;
@@ -199,83 +230,107 @@ class _BoardTutorialOverlayState extends ConsumerState<BoardTutorialOverlay>
       target = (hint != null && hint.from == selected)
           ? hint.to
           : List.generate(s.tubes.length, (i) => i).cast<int?>().firstWhere(
-                (i) => rules.canMove(s.tubes, selected, i!),
-                orElse: () => null,
-              );
+              (i) => rules.canMove(s.tubes, selected, i!),
+              orElse: () => null,
+            );
       text = type == TutorialType.sameColor
           ? 'Only balls of the same color can be stacked together.'
           : 'Tap another tube to move the ball';
     }
-    if (type == TutorialType.sameColor && selected == null && s.moveCount == 0) {
+    if (type == TutorialType.sameColor &&
+        selected == null &&
+        s.moveCount == 0) {
       text = 'Tap to Select Ball\nOnly matching colors can stack!';
     }
 
-    RRect hole(int i) => RRect.fromRectAndRadius(l.columns[i].inflate(4), const Radius.circular(18));
+    RRect hole(int i) => RRect.fromRectAndRadius(
+      l.columns[i].inflate(4),
+      const Radius.circular(18),
+    );
     final holes = <RRect>[
       if (selected != null) hole(selected),
       if (target != null && target >= 0 && target != selected) hole(target),
     ];
-    void skip() => ref.read(progressProvider.notifier).completeTutorial(type!.name);
+    void skip() =>
+        ref.read(progressProvider.notifier).completeTutorial(type!.name);
 
     return AnimatedBuilder(
       animation: _anim,
       builder: (context, _) {
         final bob = Curves.easeInOut.transform(_anim.value);
         final children = <Widget>[
-          Positioned.fill(child: IgnorePointer(child: CustomPaint(painter: _SpotlightPainter(holes)))),
+          Positioned.fill(
+            child: IgnorePointer(
+              child: CustomPaint(painter: _SpotlightPainter(holes)),
+            ),
+          ),
         ];
         if (target != null && target >= 0) {
           final col = l.columns[target];
           if (selected != null && selected != target) {
-            children.add(Positioned.fill(
-              child: IgnorePointer(
-                child: CustomPaint(
-                  painter: _ArrowPainter(
-                    l.liftedCenter(selected) - Offset(0, l.unit * 0.7),
-                    Offset(col.center.dx, col.top + l.liftSpace * 0.4),
-                    _anim.value,
+            children.add(
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: CustomPaint(
+                    painter: _ArrowPainter(
+                      l.liftedCenter(selected) - Offset(0, l.unit * 0.7),
+                      Offset(col.center.dx, col.top + l.liftSpace * 0.4),
+                      _anim.value,
+                    ),
                   ),
                 ),
               ),
-            ));
+            );
           }
-          children.add(Positioned(
-            left: col.center.dx - 18,
-            top: col.top + l.liftSpace + l.tubeHeight * 0.45,
-            child: IgnorePointer(child: _Hand(bob: bob)),
-          ));
+          children.add(
+            Positioned(
+              left: col.center.dx - 18,
+              top: col.top + l.liftSpace + l.tubeHeight * 0.45,
+              child: IgnorePointer(child: _Hand(bob: bob)),
+            ),
+          );
         }
         if (type == TutorialType.sameColor && selected != null) {
           for (var i = 0; i < s.tubes.length; i++) {
             if (i == selected) continue;
             final ok = rules.canMove(s.tubes, selected, i);
             final col = l.columns[i];
-            children.add(Positioned(
-              left: col.center.dx - 15,
-              top: col.top + l.liftSpace * 0.15,
-              child: IgnorePointer(
-                child: Container(
-                  width: 30,
-                  height: 30,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: ok ? AppColors.success : AppColors.danger,
-                    border: Border.all(color: Colors.white, width: 2),
+            children.add(
+              Positioned(
+                left: col.center.dx - 15,
+                top: col.top + l.liftSpace * 0.15,
+                child: IgnorePointer(
+                  child: Container(
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: ok ? AppColors.success : AppColors.danger,
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                    child: Icon(
+                      ok ? Icons.check_rounded : Icons.close_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                   ),
-                  child: Icon(ok ? Icons.check_rounded : Icons.close_rounded, color: Colors.white, size: 20),
                 ),
               ),
-            ));
+            );
           }
         }
         final topY = l.columns.map((c) => c.top).reduce(math.min);
-        children.add(Positioned(
-          left: 16,
-          right: 16,
-          top: math.max(0, topY - 64),
-          child: IgnorePointer(child: Center(child: _Caption(text))),
-        ));
-        children.add(Positioned(right: 8, bottom: 0, child: _SkipButton(onTap: skip)));
+        children.add(
+          Positioned(
+            left: 16,
+            right: 16,
+            top: math.max(0, topY - 64),
+            child: IgnorePointer(child: Center(child: _Caption(text))),
+          ),
+        );
+        children.add(
+          Positioned(right: 8, bottom: 0, child: _SkipButton(onTap: skip)),
+        );
         return Stack(clipBehavior: Clip.none, children: children);
       },
     );
@@ -289,14 +344,24 @@ class PowerUpTutorialOverlay extends ConsumerStatefulWidget {
   final Map<PowerUpType, GlobalKey> buttonKeys;
 
   @override
-  ConsumerState<PowerUpTutorialOverlay> createState() => _PowerUpTutorialOverlayState();
+  ConsumerState<PowerUpTutorialOverlay> createState() =>
+      _PowerUpTutorialOverlayState();
 }
 
-class _PowerUpTutorialOverlayState extends ConsumerState<PowerUpTutorialOverlay> {
+class _PowerUpTutorialOverlayState
+    extends ConsumerState<PowerUpTutorialOverlay> {
   static const _steps = [
     (PowerUpType.undo, 'Undo', 'Take back your last move.'),
-    (PowerUpType.shuffle, 'Shuffle', 'Remix the balls into a new, still-solvable puzzle.'),
-    (PowerUpType.addTube, 'Add Tube', 'Get an extra empty tube for this level.'),
+    (
+      PowerUpType.shuffle,
+      'Shuffle',
+      'Remix the balls into a new, still-solvable puzzle.',
+    ),
+    (
+      PowerUpType.addTube,
+      'Add Tube',
+      'Get an extra empty tube for this level.',
+    ),
   ];
   int _step = 0;
   Rect? _rect;
@@ -313,76 +378,132 @@ class _PowerUpTutorialOverlayState extends ConsumerState<PowerUpTutorialOverlay>
     });
   }
 
-  void _finish() =>
-      ref.read(progressProvider.notifier).completeTutorial(TutorialType.powerUps.name);
+  void _finish() => ref
+      .read(progressProvider.notifier)
+      .completeTutorial(TutorialType.powerUps.name);
 
   @override
   Widget build(BuildContext context) {
     final s = ref.watch(gameControllerProvider);
-    final done = ref.watch(progressProvider.select((p) => p.tutorialCompleted(TutorialType.powerUps.name)));
-    if (s == null || done || s.level.tutorial != TutorialType.powerUps || s.isLevelCompleted) {
+    final done = ref.watch(
+      progressProvider.select(
+        (p) => p.tutorialCompleted(TutorialType.powerUps.name),
+      ),
+    );
+    if (s == null ||
+        done ||
+        s.level.tutorial != TutorialType.powerUps ||
+        s.isLevelCompleted) {
       return const SizedBox.shrink();
     }
     _measure();
     final step = _steps[_step];
     final rect = _rect;
     final last = _step == _steps.length - 1;
-    return LayoutBuilder(builder: (context, c) {
-      return Stack(children: [
-        // Modal: blocks gameplay taps while the tooltips are shown.
-        Positioned.fill(
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () {},
-            child: CustomPaint(
-              painter: _SpotlightPainter(
-                rect == null ? const [] : [RRect.fromRectAndRadius(rect.inflate(8), const Radius.circular(22))],
-                opacity: 0.65,
+    return LayoutBuilder(
+      builder: (context, c) {
+        return Stack(
+          children: [
+            // Modal: blocks gameplay taps while the tooltips are shown.
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () {},
+                child: CustomPaint(
+                  painter: _SpotlightPainter(
+                    rect == null
+                        ? const []
+                        : [
+                            RRect.fromRectAndRadius(
+                              rect.inflate(8),
+                              const Radius.circular(22),
+                            ),
+                          ],
+                    opacity: 0.65,
+                  ),
+                ),
               ),
             ),
-          ),
-        ),
-        if (rect != null)
-          Positioned(
-            left: 24,
-            right: 24,
-            bottom: c.maxHeight - rect.top + 22,
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Container(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-                decoration: BoxDecoration(
-                  color: AppColors.panelDark,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.panelBorder, width: 1.5),
+            if (rect != null)
+              Positioned(
+                left: 24,
+                right: 24,
+                bottom: c.maxHeight - rect.top + 22,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+                      decoration: BoxDecoration(
+                        color: AppColors.panelDark,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: AppColors.panelBorder,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            step.$2.toUpperCase(),
+                            style: const TextStyle(
+                              color: AppColors.gold,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            step.$3,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${_step + 1} / ${_steps.length}',
+                            style: const TextStyle(color: Colors.white54),
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              TextButton(
+                                onPressed: _finish,
+                                child: const Text(
+                                  'Skip',
+                                  style: TextStyle(color: Colors.white60),
+                                ),
+                              ),
+                              FilledButton(
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: AppColors.buttonBottom,
+                                ),
+                                onPressed: () =>
+                                    last ? _finish() : setState(() => _step++),
+                                child: Text(last ? 'Got it!' : 'Next'),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      Icons.arrow_drop_down_rounded,
+                      size: 44,
+                      color: AppColors.panelBorder,
+                    ),
+                  ],
                 ),
-                child: Column(mainAxisSize: MainAxisSize.min, children: [
-                  Text(step.$2.toUpperCase(),
-                      style: const TextStyle(
-                          color: AppColors.gold, fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: 1.2)),
-                  const SizedBox(height: 6),
-                  Text(step.$3,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600)),
-                  const SizedBox(height: 4),
-                  Text('${_step + 1} / ${_steps.length}', style: const TextStyle(color: Colors.white54)),
-                  const SizedBox(height: 6),
-                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                    TextButton(
-                      onPressed: _finish,
-                      child: const Text('Skip', style: TextStyle(color: Colors.white60)),
-                    ),
-                    FilledButton(
-                      style: FilledButton.styleFrom(backgroundColor: AppColors.buttonBottom),
-                      onPressed: () => last ? _finish() : setState(() => _step++),
-                      child: Text(last ? 'Got it!' : 'Next'),
-                    ),
-                  ]),
-                ]),
               ),
-              Icon(Icons.arrow_drop_down_rounded, size: 44, color: AppColors.panelBorder),
-            ]),
-          ),
-      ]);
-    });
+          ],
+        );
+      },
+    );
   }
 }

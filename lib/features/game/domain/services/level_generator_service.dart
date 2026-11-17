@@ -50,20 +50,24 @@ class LevelSpec {
 
   int get tubeCount => colors + emptyTubes;
 
-  LevelSpec copyWith({int? emptyTubes, int? maxRun, int? minMoves, bool? requireSpreadColor}) =>
-      LevelSpec(
-        colors: colors,
-        emptyTubes: emptyTubes ?? this.emptyTubes,
-        capacity: capacity,
-        minMoves: minMoves ?? this.minMoves,
-        maxMoves: maxMoves,
-        maxRun: maxRun ?? this.maxRun,
-        requireSpreadColor: requireSpreadColor ?? this.requireSpreadColor,
-        candidates: candidates,
-        quantile: quantile,
-        maxAttempts: maxAttempts,
-        trapSamples: trapSamples,
-      );
+  LevelSpec copyWith({
+    int? emptyTubes,
+    int? maxRun,
+    int? minMoves,
+    bool? requireSpreadColor,
+  }) => LevelSpec(
+    colors: colors,
+    emptyTubes: emptyTubes ?? this.emptyTubes,
+    capacity: capacity,
+    minMoves: minMoves ?? this.minMoves,
+    maxMoves: maxMoves,
+    maxRun: maxRun ?? this.maxRun,
+    requireSpreadColor: requireSpreadColor ?? this.requireSpreadColor,
+    candidates: candidates,
+    quantile: quantile,
+    maxAttempts: maxAttempts,
+    trapSamples: trapSamples,
+  );
 }
 
 class GeneratedLevel {
@@ -86,7 +90,9 @@ class GeneratedLevel {
   /// Difficulty estimate: longer solutions, harder searches and more traps
   /// score higher.
   double get score =>
-      solutionLength + 3 * math.log(nodesExpanded + 1) / math.ln2 + 60 * trapRate;
+      solutionLength +
+      3 * math.log(nodesExpanded + 1) / math.ln2 +
+      60 * trapRate;
 }
 
 class LevelGeneratorService {
@@ -100,9 +106,9 @@ class LevelGeneratorService {
 
   /// The sorted start point: one full tube per color plus empty tubes.
   static RawTubes solvedArrangement(int colors, int empties, int capacity) => [
-        for (var c = 0; c < colors; c++) List<int>.filled(capacity, c),
-        for (var e = 0; e < empties; e++) <int>[],
-      ];
+    for (var c = 0; c < colors; c++) List<int>.filled(capacity, c),
+    for (var e = 0; e < empties; e++) <int>[],
+  ];
 
   /// Generates a verified-solvable level for [spec], reproducible from [seed].
   /// Collects [LevelSpec.candidates] solver-verified candidates and returns the
@@ -112,9 +118,11 @@ class LevelGeneratorService {
     final rng = SeededRandom(seed);
     final found = <GeneratedLevel>[];
     final seen = <String>{};
-    for (var attempt = 0;
-        attempt < spec.maxAttempts && found.length < spec.candidates;
-        attempt++) {
+    for (
+      var attempt = 0;
+      attempt < spec.maxAttempts && found.length < spec.candidates;
+      attempt++
+    ) {
       // Alternate the two construction strategies.
       final tubes = attempt.isEven
           ? _randomFill(spec, rng)
@@ -125,15 +133,17 @@ class LevelGeneratorService {
       if (!result.solvable) continue;
       final len = result.moves.length;
       if (len < spec.minMoves || len > spec.maxMoves) continue;
-      found.add(GeneratedLevel(
-        tubes: tubes,
-        solutionLength: len,
-        nodesExpanded: result.nodesExpanded,
-        seed: seed,
-        trapRate: spec.trapSamples > 0
-            ? trapRate(tubes, spec.capacity, rng, samples: spec.trapSamples)
-            : 0,
-      ));
+      found.add(
+        GeneratedLevel(
+          tubes: tubes,
+          solutionLength: len,
+          nodesExpanded: result.nodesExpanded,
+          seed: seed,
+          trapRate: spec.trapSamples > 0
+              ? trapRate(tubes, spec.capacity, rng, samples: spec.trapSamples)
+              : 0,
+        ),
+      );
     }
     if (found.isEmpty) return null;
     found.sort((a, b) => a.score.compareTo(b.score));
@@ -161,7 +171,8 @@ class LevelGeneratorService {
         for (var f = 0; f < t.length; f++) {
           for (var to = 0; to < t.length; to++) {
             if (f == lastTo && to == lastFrom) continue;
-            if (GameRulesService.canMoveRaw(t, f, to, capacity)) moves.add([f, to]);
+            if (GameRulesService.canMoveRaw(t, f, to, capacity))
+              moves.add([f, to]);
           }
         }
         if (moves.isEmpty) break;
@@ -317,7 +328,13 @@ class LevelGeneratorService {
     }
 
     // 3) Reverse scramble from the sorted arrangement: solvable by construction.
-    return _reverseScrambleTokens(colorsByToken, current.length, capacity, rng, currentKey);
+    return _reverseScrambleTokens(
+      colorsByToken,
+      current.length,
+      capacity,
+      rng,
+      currentKey,
+    );
   }
 
   List<List<int>> _reverseScrambleTokens(
@@ -345,8 +362,12 @@ class LevelGeneratorService {
     }
     RawTubes scrambled = solved;
     for (var tries = 0; tries < 10; tries++) {
-      scrambled = reverseScramble(solved, capacity, rng,
-          steps: colorsByToken.length * 6);
+      scrambled = reverseScramble(
+        solved,
+        capacity,
+        rng,
+        steps: colorsByToken.length * 6,
+      );
       if (canonicalKey(scrambled) != avoidKey &&
           !GameRulesService.isSolvedRaw(scrambled)) {
         break;
@@ -371,6 +392,6 @@ class LevelGeneratorService {
   }
 
   static RawTubes _colorsOf(List<List<int>> arr, List<int> colorsByToken) => [
-        for (final t in arr) [for (final i in t) colorsByToken[i]],
-      ];
+    for (final t in arr) [for (final i in t) colorsByToken[i]],
+  ];
 }

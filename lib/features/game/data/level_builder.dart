@@ -6,7 +6,13 @@ import '../domain/services/puzzle_solver_service.dart';
 import 'level_plan.dart';
 
 class BuiltLevel {
-  const BuiltLevel(this.tubes, this.par, this.capacity, this.source, {this.trapRate = 0});
+  const BuiltLevel(
+    this.tubes,
+    this.par,
+    this.capacity,
+    this.source, {
+    this.trapRate = 0,
+  });
   final RawTubes tubes;
   final int par;
   final int capacity;
@@ -38,19 +44,33 @@ BuiltLevel buildLevel(
     for (var k = 0; k < 6; k++) {
       final g = gen.generate(specs[s], e.seed + (s * 6 + k) * 104729);
       if (g != null && !avoid.contains(canonicalKey(g.tubes))) {
-        return BuiltLevel(g.tubes, g.solutionLength, specs[s].capacity,
-            s == 0 ? 'primary' : 'fallback$s', trapRate: g.trapRate);
+        return BuiltLevel(
+          g.tubes,
+          g.solutionLength,
+          specs[s].capacity,
+          s == 0 ? 'primary' : 'fallback$s',
+          trapRate: g.trapRate,
+        );
       }
     }
   }
   // Last resort: reverse scramble is solvable by construction.
   final spec = specs.first;
   final tubes = LevelGeneratorService.reverseScramble(
-    LevelGeneratorService.solvedArrangement(spec.colors, spec.emptyTubes, spec.capacity),
+    LevelGeneratorService.solvedArrangement(
+      spec.colors,
+      spec.emptyTubes,
+      spec.capacity,
+    ),
     spec.capacity,
     SeededRandom(e.seed),
     steps: spec.colors * spec.capacity * 8,
   );
   final r = solver.solve(tubes, spec.capacity, nodeLimit: nodeLimit);
-  return BuiltLevel(tubes, r.solvable ? r.moves.length : spec.colors * spec.capacity, spec.capacity, 'scramble');
+  return BuiltLevel(
+    tubes,
+    r.solvable ? r.moves.length : spec.colors * spec.capacity,
+    spec.capacity,
+    'scramble',
+  );
 }

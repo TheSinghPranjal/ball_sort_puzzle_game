@@ -39,7 +39,15 @@ class SolverResult {
 }
 
 class _Node {
-  _Node(this.tubes, this.parent, this.from, this.to, this.count, this.g, this.f);
+  _Node(
+    this.tubes,
+    this.parent,
+    this.from,
+    this.to,
+    this.count,
+    this.g,
+    this.f,
+  );
   final RawTubes tubes;
   final _Node? parent;
   final int from;
@@ -65,7 +73,11 @@ class PuzzleSolverService {
     final colors = colorCounts(start).length;
     if (GameRulesService.isSolvedRaw(start)) {
       return const SolverResult(
-          solvable: true, moves: [], nodesExpanded: 0, exhausted: false);
+        solvable: true,
+        moves: [],
+        nodesExpanded: 0,
+        exhausted: false,
+      );
     }
 
     final open = HeapPriorityQueue<_Node>((a, b) {
@@ -92,14 +104,22 @@ class PuzzleSolverService {
       }
       if (expanded >= nodeLimit) {
         return SolverResult(
-            solvable: false, moves: const [], nodesExpanded: expanded, exhausted: true);
+          solvable: false,
+          moves: const [],
+          nodesExpanded: expanded,
+          exhausted: true,
+        );
       }
       for (final child in _expand(node, capacity, colors, weight)) {
         if (!visited.contains(canonicalKey(child.tubes))) open.add(child);
       }
     }
     return SolverResult(
-        solvable: false, moves: const [], nodesExpanded: expanded, exhausted: false);
+      solvable: false,
+      moves: const [],
+      nodesExpanded: expanded,
+      exhausted: false,
+    );
   }
 
   /// First single-ball move toward a solution (for hints / tutorials).
@@ -108,7 +128,12 @@ class PuzzleSolverService {
     return r.moves.isEmpty ? null : r.moves.first;
   }
 
-  Iterable<_Node> _expand(_Node node, int capacity, int colors, double weight) sync* {
+  Iterable<_Node> _expand(
+    _Node node,
+    int capacity,
+    int colors,
+    double weight,
+  ) sync* {
     final tubes = node.tubes;
     for (var from = 0; from < tubes.length; from++) {
       final src = tubes[from];
@@ -173,7 +198,11 @@ class PuzzleSolverService {
   }
 
   /// Replays [moves] with the game rules; true if they legally solve [start].
-  static bool verifySolution(RawTubes start, int capacity, List<SolverMove> moves) {
+  static bool verifySolution(
+    RawTubes start,
+    int capacity,
+    List<SolverMove> moves,
+  ) {
     final t = cloneRaw(start);
     for (final m in moves) {
       if (!GameRulesService.canMoveRaw(t, m.from, m.to, capacity)) return false;

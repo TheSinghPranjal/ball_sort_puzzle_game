@@ -20,6 +20,7 @@ class TubeView extends StatefulWidget {
     required this.onTap,
     this.selected = false,
     this.hiddenBallId,
+    this.hiddenBallIds = const {},
     this.shakeSeq = 0,
     this.popSeq = 0,
     this.celebrateSeq = 0,
@@ -35,6 +36,7 @@ class TubeView extends StatefulWidget {
 
   /// Ball that is currently in flight towards this tube (not drawn yet).
   final int? hiddenBallId;
+  final Set<int> hiddenBallIds;
   final int shakeSeq;
   final int popSeq;
   final int celebrateSeq;
@@ -65,10 +67,26 @@ class _TubeViewState extends State<TubeView> with TickerProviderStateMixin {
       duration: GameConstants.liftAnimation,
       value: widget.selected ? 1 : 0,
     );
-    _shake = AnimationController(vsync: this, duration: GameConstants.shakeAnimation, value: 1);
-    _pop = AnimationController(vsync: this, duration: const Duration(milliseconds: 520), value: 1);
-    _enter = AnimationController(vsync: this, duration: const Duration(milliseconds: 520), value: 1);
-    _sparkle = AnimationController(vsync: this, duration: const Duration(milliseconds: 800), value: 1);
+    _shake = AnimationController(
+      vsync: this,
+      duration: GameConstants.shakeAnimation,
+      value: 1,
+    );
+    _pop = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 520),
+      value: 1,
+    );
+    _enter = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 520),
+      value: 1,
+    );
+    _sparkle = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+      value: 1,
+    );
     if (widget.animateEntrance) _enter.forward(from: 0);
     if (widget.popSeq != 0) _pop.forward(from: 0);
   }
@@ -122,14 +140,18 @@ class _TubeViewState extends State<TubeView> with TickerProviderStateMixin {
         animation: Listenable.merge([_shake, _enter]),
         builder: (context, child) {
           final s = _shake.value;
-          final dx = s >= 1 ? 0.0 : math.sin(s * math.pi * 6) * (1 - s) * u * 0.22;
+          final dx = s >= 1
+              ? 0.0
+              : math.sin(s * math.pi * 6) * (1 - s) * u * 0.22;
           final e = Curves.easeOutBack.transform(_enter.value);
           return Opacity(
             opacity: _enter.value.clamp(0.0, 1.0),
             child: Transform(
               alignment: Alignment.bottomCenter,
               transform: Matrix4.translationValues(dx, (1 - e) * u, 0)
-                ..multiply(Matrix4.diagonal3Values(0.6 + 0.4 * e, 0.6 + 0.4 * e, 1)),
+                ..multiply(
+                  Matrix4.diagonal3Values(0.6 + 0.4 * e, 0.6 + 0.4 * e, 1),
+                ),
               child: child,
             ),
           );
@@ -145,14 +167,19 @@ class _TubeViewState extends State<TubeView> with TickerProviderStateMixin {
                 Positioned.fromRect(
                   rect: tubeRect,
                   child: CustomPaint(
-                    painter: GlassTubeBackPainter(selected: widget.selected, glowColor: glow),
+                    painter: GlassTubeBackPainter(
+                      selected: widget.selected,
+                      glowColor: glow,
+                    ),
                   ),
                 ),
               ];
               Widget? lifted;
               for (var i = 0; i < balls.length; i++) {
                 final b = balls[i];
-                if (b.id == widget.hiddenBallId) continue;
+                if (b.id == widget.hiddenBallId ||
+                    widget.hiddenBallIds.contains(b.id))
+                  continue;
                 var c = l.slotCenterInColumn(i);
                 final isTop = i == balls.length - 1;
                 if (isTop && topLifted) {
@@ -175,12 +202,19 @@ class _TubeViewState extends State<TubeView> with TickerProviderStateMixin {
                         child: child,
                         builder: (context, child) => Transform(
                           alignment: Alignment.center,
-                          transform: Matrix4.diagonal3Values(Curves.easeOutBack.transform(anim.value), 1, 1),
+                          transform: Matrix4.diagonal3Values(
+                            Curves.easeOutBack.transform(anim.value),
+                            1,
+                            1,
+                          ),
                           child: child,
                         ),
                       ),
                       child: widget.hiddenIds.contains(b.id)
-                          ? MysteryBallWidget(key: const ValueKey('hidden'), diameter: u)
+                          ? MysteryBallWidget(
+                              key: const ValueKey('hidden'),
+                              diameter: u,
+                            )
                           : GlossyBallWidget(
                               key: const ValueKey('shown'),
                               colorId: b.colorId,
@@ -196,24 +230,31 @@ class _TubeViewState extends State<TubeView> with TickerProviderStateMixin {
                   children.add(ball);
                 }
               }
-              children.add(Positioned.fromRect(
-                rect: tubeRect,
-                child: CustomPaint(
-                  painter: GlassTubeFrontPainter(selected: widget.selected, glowColor: glow),
-                ),
-              ));
-              if (lifted != null) children.add(lifted);
-              if (_sparkle.value < 1) {
-                children.add(Positioned.fill(
+              children.add(
+                Positioned.fromRect(
+                  rect: tubeRect,
                   child: CustomPaint(
-                    painter: SparklePainter(
-                      t: _sparkle.value,
-                      origin: Offset(l.columnWidth / 2, l.liftSpace),
-                      color: glow ?? AppColors.gold,
-                      radius: u * 1.4,
+                    painter: GlassTubeFrontPainter(
+                      selected: widget.selected,
+                      glowColor: glow,
                     ),
                   ),
-                ));
+                ),
+              );
+              if (lifted != null) children.add(lifted);
+              if (_sparkle.value < 1) {
+                children.add(
+                  Positioned.fill(
+                    child: CustomPaint(
+                      painter: SparklePainter(
+                        t: _sparkle.value,
+                        origin: Offset(l.columnWidth / 2, l.liftSpace),
+                        color: glow ?? AppColors.gold,
+                        radius: u * 1.4,
+                      ),
+                    ),
+                  ),
+                );
               }
               return Stack(clipBehavior: Clip.none, children: children);
             },

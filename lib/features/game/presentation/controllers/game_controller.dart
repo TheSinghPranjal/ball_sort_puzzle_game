@@ -81,21 +81,26 @@ class GameController extends Notifier<GameState?> {
   GameState _fresh(LevelConfig level) {
     final tubes = level.buildTubes();
     return GameState(
-        level: level,
-        tubes: tubes,
-        revealedBallIds: _reveal(level, const {}, tubes),
-        undoRemaining: level.usesFor(PowerUpType.undo),
-        shuffleRemaining: level.usesFor(PowerUpType.shuffle),
-        addTubeRemaining: level.usesFor(PowerUpType.addTube),
-        remainingSeconds: level.timeLimitSeconds,
-        sessionId: ++_session,
-        events: [BoardResetEvent(++_seq)],
-      );
+      level: level,
+      tubes: tubes,
+      revealedBallIds: _reveal(level, const {}, tubes),
+      undoRemaining: level.usesFor(PowerUpType.undo),
+      shuffleRemaining: level.usesFor(PowerUpType.shuffle),
+      addTubeRemaining: level.usesFor(PowerUpType.addTube),
+      remainingSeconds: level.timeLimitSeconds,
+      sessionId: ++_session,
+      events: [BoardResetEvent(++_seq)],
+    );
   }
 
   /// Mystery levels: reveals the top ball of every tube, every ball of a
   /// completed tube, or everything when [all] is set.
-  static Set<int> _reveal(LevelConfig level, Set<int> revealed, List<Tube> tubes, {bool all = false}) {
+  static Set<int> _reveal(
+    LevelConfig level,
+    Set<int> revealed,
+    List<Tube> tubes, {
+    bool all = false,
+  }) {
     if (!level.mystery) return const {};
     final out = {...revealed};
     for (var i = 0; i < tubes.length; i++) {
@@ -150,13 +155,29 @@ class GameController extends Notifier<GameState?> {
 
   void _commitMove(int from, int to) {
     final s = state!;
-    final ball = s.tubes[from].topBall!;
-    final tubes = rules.applyMove(s.tubes, from, to);
+    final count = rules.movableCount(
+      s.tubes,
+      from,
+      to,
+      canTake: s.level.mystery ? (b) => !s.isHidden(b.id) : null,
+    );
+    final res = rules.applyBulkMove(s.tubes, from, to, count: count);
+    final tubes = res.tubes;
+    // Top-most ball first, so the flight starts with the one the player lifted.
+    final moved = res.moved;
+    final ball = moved.first;
     final moves = s.moveCount + 1;
     final solved = rules.isSolved(tubes);
     var events = _withEvent(
       s,
-      BallMovedEvent(++_seq, from: from, to: to, ballId: ball.id, colorId: ball.colorId),
+      BallMovedEvent(
+        ++_seq,
+        from: from,
+        to: to,
+        ballId: ball.id,
+        colorId: ball.colorId,
+        ballIds: [for (final b in moved) b.id],
+      ),
     );
     if (rules.isTubeComplete(tubes, to) && tubes[to].isFull) {
       events = [...events, TubeCompletedEvent(++_seq, tubeIndex: to)];
@@ -179,7 +200,11 @@ class GameController extends Notifier<GameState?> {
     if (solved) {
       _timer?.cancel();
       _clearSave();
-      unawaited(ref.read(progressProvider.notifier).completeLevel(s.currentLevel, stars));
+      unawaited(
+        ref
+            .read(progressProvider.notifier)
+            .completeLevel(s.currentLevel, stars),
+      );
     } else {
       _persist();
     }
@@ -249,8 +274,14 @@ class GameController extends Notifier<GameState?> {
     if (from == null || to == null) return null;
     final ball = now[from].topBall!;
     if (before[to].topBall?.id != ball.id) return null;
-    return BallMovedEvent(++_seq,
-        from: from, to: to, ballId: ball.id, colorId: ball.colorId, fromLifted: false);
+    return BallMovedEvent(
+      ++_seq,
+      from: from,
+      to: to,
+      ballId: ball.id,
+      colorId: ball.colorId,
+      fromLifted: false,
+    );
   }
 
   Future<PowerUpResult> shuffle({int? seed}) async {
@@ -273,13 +304,21 @@ class GameController extends Notifier<GameState?> {
 
     state = s.copyWith(isBusy: true, selectedTubeIndex: null);
     final arrangement = await _runShuffle(
-        ref.read(backgroundRunnerProvider), colors, current, capacity, useSeed);
+      ref.read(backgroundRunnerProvider),
+      colors,
+      current,
+      capacity,
+      useSeed,
+    );
     final now = state;
-    if (now == null || now.sessionId != s.sessionId || !now.isBusy) return PowerUpResult.busy;
+    if (now == null || now.sessionId != s.sessionId || !now.isBusy)
+      return PowerUpResult.busy;
 
     final tubes = [
       for (var i = 0; i < s.tubes.length; i++)
-        s.tubes[i].copyWith(balls: [for (final idx in arrangement[i]) balls[idx]]),
+        s.tubes[i].copyWith(
+          balls: [for (final idx in arrangement[i]) balls[idx]],
+        ),
     ];
     state = now.copyWith(
       tubes: tubes,
@@ -303,7 +342,12 @@ class GameController extends Notifier<GameState?> {
     }
     if (s.addTubeRemaining <= 0) return PowerUpResult.noUsesLeft;
     final id = s.tubes.map((t) => t.id).reduce(math.max) + 1;
-    final tube = Tube(id: id, balls: const [], capacity: s.level.tubeCapacity, isExtraTube: true);
+    final tube = Tube(
+      id: id,
+      balls: const [],
+      capacity: s.level.tubeCapacity,
+      isExtraTube: true,
+    );
     state = s.copyWith(
       tubes: [...s.tubes, tube],
       undoHistory: _pushHistory(s),
@@ -334,7 +378,11 @@ class GameController extends Notifier<GameState?> {
   void _startTimer() {
     _timer?.cancel();
     final s = state;
-    if (s == null || s.remainingSeconds == null || s.isLevelCompleted || s.isTimeUp) return;
+    if (s == null ||
+        s.remainingSeconds == null ||
+        s.isLevelCompleted ||
+        s.isTimeUp)
+      return;
     _timer = Timer.periodic(const Duration(seconds: 1), (_) => tick());
   }
 
@@ -346,7 +394,11 @@ class GameController extends Notifier<GameState?> {
     final left = s.remainingSeconds! - 1;
     if (left <= 0) {
       _timer?.cancel();
-      state = s.copyWith(remainingSeconds: 0, isTimeUp: true, selectedTubeIndex: null);
+      state = s.copyWith(
+        remainingSeconds: 0,
+        isTimeUp: true,
+        selectedTubeIndex: null,
+      );
       _audio.play(Sfx.invalid);
       _clearSave();
     } else {
@@ -359,7 +411,10 @@ class GameController extends Notifier<GameState?> {
   // ---------------------------------------------------------------------------
 
   List<GameSnapshot> _pushHistory(GameState s) {
-    final h = [...s.undoHistory, GameSnapshot(tubes: s.tubes, moveCount: s.moveCount)];
+    final h = [
+      ...s.undoHistory,
+      GameSnapshot(tubes: s.tubes, moveCount: s.moveCount),
+    ];
     return h.length > GameConstants.maxUndoHistory
         ? h.sublist(h.length - GameConstants.maxUndoHistory)
         : h;
@@ -375,11 +430,13 @@ class GameController extends Notifier<GameState?> {
     if (s == null || s.isLevelCompleted || s.isTimeUp) return;
     final json = s.toSaveJson();
     final history = json['history'] as List;
-    if (history.length > 60) json['history'] = history.sublist(history.length - 60);
+    if (history.length > 60)
+      json['history'] = history.sublist(history.length - 60);
     unawaited(_storage.writeJson(LocalStorageService.savedGameKey, json));
   }
 
-  void _clearSave() => unawaited(_storage.remove(LocalStorageService.savedGameKey));
+  void _clearSave() =>
+      unawaited(_storage.remove(LocalStorageService.savedGameKey));
 
   /// Saved level id, if an in-progress game exists.
   int? savedLevelId() =>
@@ -390,13 +447,15 @@ class GameController extends Notifier<GameState?> {
     if (j == null || j['level'] != level.levelId) return null;
     try {
       final tubes = [
-        for (final t in j['tubes'] as List) Tube.fromJson(Map<String, dynamic>.from(t as Map)),
+        for (final t in j['tubes'] as List)
+          Tube.fromJson(Map<String, dynamic>.from(t as Map)),
       ];
       final history = [
         for (final h in j['history'] as List)
           GameSnapshot.fromJson(Map<String, dynamic>.from(h as Map)),
       ];
-      if (!_isValidBoard(level, tubes) || !history.every((h) => _isValidBoard(level, h.tubes))) {
+      if (!_isValidBoard(level, tubes) ||
+          !history.every((h) => _isValidBoard(level, h.tubes))) {
         return null;
       }
       return GameState(
@@ -407,15 +466,15 @@ class GameController extends Notifier<GameState?> {
         undoRemaining: j['undo'] as int,
         shuffleRemaining: j['shuffle'] as int,
         addTubeRemaining: j['add'] as int,
-        remainingSeconds: level.timeLimitSeconds == null ? null : j['time'] as int?,
+        remainingSeconds: level.timeLimitSeconds == null
+            ? null
+            : j['time'] as int?,
         isStuck: !rules.isSolved(tubes) && !rules.hasAnyLegalMove(tubes),
         sessionId: ++_session,
         events: [BoardResetEvent(++_seq)],
-        revealedBallIds: _reveal(
-          level,
-          {for (final id in (j['rev'] as List? ?? const [])) id as int},
-          tubes,
-        ),
+        revealedBallIds: _reveal(level, {
+          for (final id in (j['rev'] as List? ?? const [])) id as int,
+        }, tubes),
       );
     } catch (_) {
       return null; // corrupted save: start fresh rather than crash
@@ -438,7 +497,8 @@ class GameController extends Notifier<GameState?> {
     final actual = <int, int>{};
     final ids = <int>{};
     for (final t in tubes) {
-      if (t.capacity != level.tubeCapacity || t.balls.length > t.capacity) return false;
+      if (t.capacity != level.tubeCapacity || t.balls.length > t.capacity)
+        return false;
       for (final b in t.balls) {
         if (!ids.add(b.id)) return false;
         actual[b.colorId] = (actual[b.colorId] ?? 0) + 1;
@@ -459,8 +519,7 @@ Future<List<List<int>>> _runShuffle(
   List<List<int>> current,
   int capacity,
   int seed,
-) =>
-    runner.run(() => computeShuffle(colors, current, capacity, seed));
+) => runner.run(() => computeShuffle(colors, current, capacity, seed));
 
 /// Top-level so it can run inside an isolate.
 List<List<int>> computeShuffle(
@@ -468,13 +527,13 @@ List<List<int>> computeShuffle(
   List<List<int>> current,
   int capacity,
   int seed,
-) =>
-    const LevelGeneratorService().shuffleSolvable(
-      colorsByToken: colorsByToken,
-      current: current,
-      capacity: capacity,
-      seed: seed,
-    );
+) => const LevelGeneratorService().shuffleSolvable(
+  colorsByToken: colorsByToken,
+  current: current,
+  capacity: capacity,
+  seed: seed,
+);
 
-final gameControllerProvider =
-    NotifierProvider<GameController, GameState?>(GameController.new);
+final gameControllerProvider = NotifierProvider<GameController, GameState?>(
+  GameController.new,
+);

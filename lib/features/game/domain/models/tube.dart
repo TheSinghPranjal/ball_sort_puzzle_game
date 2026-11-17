@@ -26,31 +26,31 @@ class Tube {
   List<int> get colorIds => [for (final b in balls) b.colorId];
 
   Tube copyWith({List<Ball>? balls, bool? isExtraTube}) => Tube(
-        id: id,
-        balls: balls ?? this.balls,
-        capacity: capacity,
-        isExtraTube: isExtraTube ?? this.isExtraTube,
-      );
+    id: id,
+    balls: balls ?? this.balls,
+    capacity: capacity,
+    isExtraTube: isExtraTube ?? this.isExtraTube,
+  );
 
   Tube push(Ball ball) => copyWith(balls: [...balls, ball]);
   Tube pop() => copyWith(balls: balls.sublist(0, balls.length - 1));
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'cap': capacity,
-        'x': isExtraTube,
-        'b': [for (final b in balls) b.toJson()],
-      };
+    'id': id,
+    'cap': capacity,
+    'x': isExtraTube,
+    'b': [for (final b in balls) b.toJson()],
+  };
 
   factory Tube.fromJson(Map<String, dynamic> json) => Tube(
-        id: json['id'] as int,
-        capacity: json['cap'] as int,
-        isExtraTube: json['x'] as bool? ?? false,
-        balls: [
-          for (final b in json['b'] as List)
-            Ball.fromJson(Map<String, dynamic>.from(b as Map)),
-        ],
-      );
+    id: json['id'] as int,
+    capacity: json['cap'] as int,
+    isExtraTube: json['x'] as bool? ?? false,
+    balls: [
+      for (final b in json['b'] as List)
+        Ball.fromJson(Map<String, dynamic>.from(b as Map)),
+    ],
+  );
 
   @override
   String toString() => 'Tube#$id$colorIds${isExtraTube ? '+' : ''}';

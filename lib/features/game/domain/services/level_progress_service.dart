@@ -4,7 +4,9 @@ import '../models/game_progress.dart';
 /// Pure progression rules (unlocking, best stars, tutorials). Persistence is
 /// done by the provider layer, keeping this logic trivially testable.
 class LevelProgressService {
-  const LevelProgressService({this.totalLevels = GameConstants.totalLevelCount});
+  const LevelProgressService({
+    this.totalLevels = GameConstants.totalLevelCount,
+  });
 
   final int totalLevels;
 
@@ -13,8 +15,9 @@ class LevelProgressService {
     final next = (levelId + 1).clamp(1, totalLevels);
     return p.copyWith(
       completedLevels: {...p.completedLevels, levelId: best},
-      highestUnlockedLevel:
-          next > p.highestUnlockedLevel ? next : p.highestUnlockedLevel,
+      highestUnlockedLevel: next > p.highestUnlockedLevel
+          ? next
+          : p.highestUnlockedLevel,
       lastPlayedLevel: next,
     );
   }

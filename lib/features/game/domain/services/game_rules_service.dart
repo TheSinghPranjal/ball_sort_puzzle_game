@@ -1,4 +1,7 @@
+import 'dart:math' as math;
+
 import '../../../../core/utils/game_helpers.dart';
+import '../models/ball.dart';
 import '../models/tube.dart';
 
 enum MoveValidation {
@@ -102,6 +105,50 @@ class GameRulesService {
     return next;
   }
 
+  /// How many balls a move from [from] to [to] carries: the run of
+  /// same-coloured balls on top of [from], limited by the free space in [to].
+  /// [canTake] can further restrict which balls may travel (e.g. hidden ones).
+  /// Returns 0 for an illegal move.
+  int movableCount(
+    List<Tube> tubes,
+    int from,
+    int to, {
+    bool Function(Ball)? canTake,
+  }) {
+    if (!canMove(tubes, from, to)) return 0;
+    final src = tubes[from].balls;
+    final color = src.last.colorId;
+    var run = 0;
+    for (var i = src.length - 1; i >= 0; i--) {
+      if (src[i].colorId != color) break;
+      if (run > 0 && canTake != null && !canTake(src[i])) break;
+      run++;
+    }
+    return math.min(run, tubes[to].freeSlots);
+  }
+
+  /// Moves up to [count] top balls from [from] to [to] (the whole same-colour
+  /// run by default). Returns the new tubes and the balls moved, top first.
+  ({List<Tube> tubes, List<Ball> moved}) applyBulkMove(
+    List<Tube> tubes,
+    int from,
+    int to, {
+    int? count,
+  }) {
+    final n = count ?? movableCount(tubes, from, to);
+    if (n < 1 || !canMove(tubes, from, to)) {
+      throw StateError('Illegal move $from -> $to');
+    }
+    final src = tubes[from].balls;
+    final taken = src.sublist(src.length - n);
+    final next = List<Tube>.of(tubes);
+    next[from] = tubes[from].copyWith(balls: src.sublist(0, src.length - n));
+    next[to] = tubes[to].copyWith(
+      balls: [...tubes[to].balls, ...taken.reversed],
+    );
+    return (tubes: next, moved: taken.reversed.toList());
+  }
+
   bool isSolved(List<Tube> tubes) => isSolvedRaw(toRaw(tubes));
 
   bool hasAnyLegalMove(List<Tube> tubes) {
@@ -127,5 +174,7 @@ class GameRulesService {
     return total == tube.balls.length;
   }
 
-  static RawTubes toRaw(List<Tube> tubes) => [for (final t in tubes) t.colorIds];
+  static RawTubes toRaw(List<Tube> tubes) => [
+    for (final t in tubes) t.colorIds,
+  ];
 }

@@ -87,10 +87,33 @@ void main() {
     test('valid move updates tubes, counter and history', () async {
       await ctrl().startLevel(2);
       move(0, 2);
-      expect(colors(), [[0, 0, 1], [1, 1, 0, 0], [1]]);
+      // Both 1s on top of tube 0 travel together (one move).
+      expect(colors(), [[0, 0], [1, 1, 0, 0], [1, 1]]);
       expect(st().moveCount, 1);
       expect(st().undoHistory.length, 1);
       expect(ballIds().length, 8);
+    });
+
+    test('a same-colour run moves together, limited by free space', () async {
+      await ctrl().startLevel(2);
+      BallMovedEvent e0() => st().events.whereType<BallMovedEvent>().last;
+      move(0, 2);
+      expect(e0().allBallIds.length, 2);
+    });
+
+    test('bulk move stops when the destination fills up', () {
+      const rules = GameRulesService();
+      final t = tubes([
+        [0, 1, 1, 1],
+        [1, 1, 1],
+        <int>[],
+      ]);
+      expect(rules.movableCount(t, 0, 1), 1); // only one free slot
+      expect(rules.movableCount(t, 0, 2), 3);
+      final r = rules.applyBulkMove(t, 0, 2);
+      expect(r.tubes[0].colorIds, [0]);
+      expect(r.tubes[2].colorIds, [1, 1, 1]);
+      expect(r.moved.length, 3);
     });
 
     test('solving a level completes it, saves progress and unlocks the next', () async {
@@ -110,12 +133,17 @@ void main() {
     test('playing the reference solution completes every tutorial level', () async {
       for (final id in [1, 2, 3, 4, 5]) {
         await ctrl().startLevel(id, resume: false);
-        final r = const PuzzleSolverService().solve(GameRulesService.toRaw(st().tubes), 4);
-        for (final m in r.moves) {
-          move(m.from, m.to);
+        const solver = PuzzleSolverService();
+        final reference = solver.solve(GameRulesService.toRaw(st().tubes), 4);
+        // Runs of same-coloured balls move together, so follow hints step by
+        // step instead of replaying single-ball moves.
+        var guard = 0;
+        while (!st().isLevelCompleted && guard++ < 200) {
+          final h = solver.nextHint(GameRulesService.toRaw(st().tubes), 4)!;
+          move(h.from, h.to);
         }
         expect(st().isLevelCompleted, isTrue, reason: 'level $id');
-        expect(st().moveCount, r.moves.length);
+        expect(st().moveCount, lessThanOrEqualTo(reference.moves.length));
       }
       expect(c.read(progressProvider).highestUnlockedLevel, 6);
     });

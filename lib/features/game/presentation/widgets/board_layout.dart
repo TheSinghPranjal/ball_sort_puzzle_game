@@ -38,7 +38,8 @@ class BoardLayout {
   double get columnWidth => columns.isEmpty ? 0 : columns.first.width;
   double get ballSpacing => unit * _spacing;
 
-  static double _tubeHeightUnits(int capacity) => _topPad + capacity * _spacing + _bottomPad;
+  static double _tubeHeightUnits(int capacity) =>
+      _topPad + capacity * _spacing + _bottomPad;
 
   static BoardLayout compute(Size size, int tubeCount, int capacity) {
     final n = math.max(1, tubeCount);
@@ -71,13 +72,18 @@ class BoardLayout {
     // Balanced rows: earlier rows take the extra tube.
     final base = n ~/ bestRows;
     final extra = n % bestRows;
-    final rowCounts = [for (var r = 0; r < bestRows; r++) base + (r < extra ? 1 : 0)];
+    final rowCounts = [
+      for (var r = 0; r < bestRows; r++) base + (r < extra ? 1 : 0),
+    ];
     final maxPerRow = rowCounts.reduce(math.max);
 
     // Spread tubes out when there is room, but not absurdly far.
     final gap = maxPerRow <= 1
         ? 0.0
-        : math.min(u * 1.6, (w - 2 * margin - maxPerRow * tw) / (maxPerRow - 1));
+        : math.min(
+            u * 1.6,
+            (w - 2 * margin - maxPerRow * tw) / (maxPerRow - 1),
+          );
     final rowGap = u * _rowGap;
     final blockH = bestRows * colH + (bestRows - 1) * rowGap;
     final top0 = (h - blockH) / 2;
@@ -106,19 +112,25 @@ class BoardLayout {
   }
 
   /// Tube body rect relative to its column.
-  Rect get tubeRectInColumn =>
-      Rect.fromLTWH((columnWidth - tubeWidth) / 2, liftSpace, tubeWidth, tubeHeight);
+  Rect get tubeRectInColumn => Rect.fromLTWH(
+    (columnWidth - tubeWidth) / 2,
+    liftSpace,
+    tubeWidth,
+    tubeHeight,
+  );
 
   /// Ball center for [slot] (0 = bottom) relative to its column.
   Offset slotCenterInColumn(int slot) => Offset(
-        columnWidth / 2,
-        liftSpace + tubeHeight - unit * _bottomPad - unit / 2 - slot * ballSpacing,
-      );
+    columnWidth / 2,
+    liftSpace + tubeHeight - unit * _bottomPad - unit / 2 - slot * ballSpacing,
+  );
 
   /// Center of a lifted (selected) ball, relative to its column.
-  Offset get liftedCenterInColumn => Offset(columnWidth / 2, liftSpace - unit * 0.62);
+  Offset get liftedCenterInColumn =>
+      Offset(columnWidth / 2, liftSpace - unit * 0.62);
 
-  Offset slotCenter(int tube, int slot) => columns[tube].topLeft + slotCenterInColumn(slot);
+  Offset slotCenter(int tube, int slot) =>
+      columns[tube].topLeft + slotCenterInColumn(slot);
   Offset liftedCenter(int tube) => columns[tube].topLeft + liftedCenterInColumn;
   Rect tubeRect(int tube) => tubeRectInColumn.shift(columns[tube].topLeft);
 }

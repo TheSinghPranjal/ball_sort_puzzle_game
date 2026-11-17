@@ -38,7 +38,9 @@ class GlassTubeBackPainter extends CustomPainter {
         Paint()
           ..style = PaintingStyle.stroke
           ..strokeWidth = stroke * 4
-          ..color = (glowColor ?? AppColors.tubeSelected).withValues(alpha: 0.35)
+          ..color = (glowColor ?? AppColors.tubeSelected).withValues(
+            alpha: 0.35,
+          )
           ..maskFilter = MaskFilter.blur(BlurStyle.normal, stroke * 3),
       );
     }
@@ -117,13 +119,17 @@ class GlassTubeFrontPainter extends CustomPainter {
     );
 
     // Outline.
-    final outline = glowColor ?? (selected ? AppColors.tubeSelected : AppColors.tubeOutline);
+    final outline =
+        glowColor ??
+        (selected ? AppColors.tubeSelected : AppColors.tubeOutline);
     canvas.drawPath(
       path,
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = selected ? stroke * 1.3 : stroke
-        ..color = outline.withValues(alpha: glowColor != null || selected ? 1 : 0.85),
+        ..color = outline.withValues(
+          alpha: glowColor != null || selected ? 1 : 0.85,
+        ),
     );
 
     // Lip at the opening.
@@ -168,7 +174,10 @@ class GlassTubeWidget extends StatelessWidget {
       height: height,
       child: CustomPaint(
         painter: GlassTubeBackPainter(selected: selected, glowColor: glowColor),
-        foregroundPainter: GlassTubeFrontPainter(selected: selected, glowColor: glowColor),
+        foregroundPainter: GlassTubeFrontPainter(
+          selected: selected,
+          glowColor: glowColor,
+        ),
         child: child,
       ),
     );

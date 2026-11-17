@@ -5,14 +5,14 @@ enum Difficulty { tutorial, easy, medium, hard, expert, master, legend }
 
 extension DifficultyLabel on Difficulty {
   String get label => switch (this) {
-        Difficulty.tutorial => 'Tutorial',
-        Difficulty.easy => 'Easy',
-        Difficulty.medium => 'Medium',
-        Difficulty.hard => 'Hard',
-        Difficulty.expert => 'Expert',
-        Difficulty.master => 'Master',
-        Difficulty.legend => 'Legend',
-      };
+    Difficulty.tutorial => 'Tutorial',
+    Difficulty.easy => 'Easy',
+    Difficulty.medium => 'Medium',
+    Difficulty.hard => 'Hard',
+    Difficulty.expert => 'Expert',
+    Difficulty.master => 'Master',
+    Difficulty.legend => 'Legend',
+  };
 }
 
 enum PowerUpType { undo, shuffle, addTube }
@@ -41,9 +41,9 @@ class LevelConfig {
     this.newMechanic,
     this.tutorial = TutorialType.none,
     this.mystery = false,
-  }) : initialTubeArrangement = List.unmodifiable(
-          [for (final t in initialTubeArrangement) List<int>.unmodifiable(t)],
-        );
+  }) : initialTubeArrangement = List.unmodifiable([
+         for (final t in initialTubeArrangement) List<int>.unmodifiable(t),
+       ]);
 
   final int levelId;
   final String name;
@@ -81,8 +81,7 @@ class LevelConfig {
 
   int get tubeCount => initialTubeArrangement.length;
 
-  int get colorCount =>
-      {for (final t in initialTubeArrangement) ...t}.length;
+  int get colorCount => {for (final t in initialTubeArrangement) ...t}.length;
 
   int get emptyTubeCount =>
       initialTubeArrangement.where((t) => t.isEmpty).length;

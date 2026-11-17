@@ -11,7 +11,9 @@ class ProgressController extends Notifier<GameProgress> {
 
   @override
   GameProgress build() {
-    final j = ref.watch(localStorageProvider).readJson(LocalStorageService.progressKey);
+    final j = ref
+        .watch(localStorageProvider)
+        .readJson(LocalStorageService.progressKey);
     return j == null ? GameProgress() : GameProgress.fromJson(j);
   }
 
@@ -23,11 +25,13 @@ class ProgressController extends Notifier<GameProgress> {
   Future<void> completeLevel(int levelId, int stars) =>
       _save(service.completeLevel(state, levelId, stars));
 
-  Future<void> markPlayed(int levelId) => _save(service.markPlayed(state, levelId));
+  Future<void> markPlayed(int levelId) =>
+      _save(service.markPlayed(state, levelId));
 
   Future<void> completeTutorial(String key) =>
       _save(service.completeTutorial(state, key));
 }
 
-final progressProvider =
-    NotifierProvider<ProgressController, GameProgress>(ProgressController.new);
+final progressProvider = NotifierProvider<ProgressController, GameProgress>(
+  ProgressController.new,
+);

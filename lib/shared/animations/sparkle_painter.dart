@@ -4,7 +4,12 @@ import 'package:flutter/material.dart';
 
 /// Burst of small 4-point stars expanding from [origin]; [t] in 0..1.
 class SparklePainter extends CustomPainter {
-  SparklePainter({required this.t, required this.origin, required this.color, required this.radius});
+  SparklePainter({
+    required this.t,
+    required this.origin,
+    required this.color,
+    required this.radius,
+  });
 
   final double t;
   final Offset origin;

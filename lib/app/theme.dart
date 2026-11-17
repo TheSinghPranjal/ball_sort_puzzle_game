@@ -17,8 +17,13 @@ ThemeData buildTheme() {
     snackBarTheme: const SnackBarThemeData(
       behavior: SnackBarBehavior.floating,
       backgroundColor: AppColors.panel,
-      contentTextStyle: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+      contentTextStyle: TextStyle(
+        color: Colors.white,
+        fontWeight: FontWeight.w600,
+      ),
     ),
-    progressIndicatorTheme: const ProgressIndicatorThemeData(color: AppColors.lavender),
+    progressIndicatorTheme: const ProgressIndicatorThemeData(
+      color: AppColors.lavender,
+    ),
   );
 }
