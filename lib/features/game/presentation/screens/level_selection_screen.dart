@@ -9,6 +9,7 @@ import '../../../../core/constants/game_constants.dart';
 import '../../../../shared/audio/audio_service.dart';
 import '../../../../shared/widgets/glossy_button.dart';
 import '../../../../shared/widgets/space_background.dart';
+import '../../data/level_data.dart';
 import '../../data/level_repository.dart';
 import '../../data/progress_repository.dart';
 import '../../domain/models/game_progress.dart';
@@ -20,7 +21,7 @@ class _Band {
   final int to;
 }
 
-const _bands = [
+const _allBands = [
   _Band('TUTORIAL', 1, 5),
   _Band('EASY', 6, 20),
   _Band('MEDIUM', 21, 40),
@@ -28,7 +29,17 @@ const _bands = [
   _Band('EXPERT', 61, 80),
   _Band('MASTER', 81, 100),
   _Band('CHALLENGE', 101, 500),
-  _Band('LEGEND', 501, GameConstants.totalLevelCount),
+  _Band('LEGEND', 501, 1000),
+  _Band('MYTHIC', 1001, 1500),
+  _Band('IMMORTAL', 1501, GameConstants.totalLevelCount),
+];
+
+/// Bands clipped to the levels that actually ship in the data file, so a
+/// count/data mismatch can never render tiles for missing levels.
+final _bands = [
+  for (final b in _allBands)
+    if (b.from <= curatedLevelData.length)
+      _Band(b.title, b.from, math.min(b.to, curatedLevelData.length)),
 ];
 
 class LevelSelectionScreen extends ConsumerStatefulWidget {

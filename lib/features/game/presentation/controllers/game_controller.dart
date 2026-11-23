@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/game_constants.dart';
+import '../../../../core/utils/game_helpers.dart';
 import '../../../../shared/audio/audio_service.dart';
 import '../../../../storage/local_storage_service.dart';
 import '../../data/level_repository.dart';
@@ -14,6 +15,7 @@ import '../../domain/models/level_config.dart';
 import '../../domain/models/tube.dart';
 import '../../domain/services/game_rules_service.dart';
 import '../../domain/services/level_generator_service.dart';
+import '../../domain/services/puzzle_solver_service.dart';
 
 /// Why a power-up request was refused (lets the UI explain it).
 enum PowerUpResult { applied, unavailable, noUsesLeft, nothingToUndo, busy }
@@ -29,6 +31,9 @@ class GameController extends Notifier<GameState?> {
   int _loadToken = 0;
   Timer? _timer;
   final _pauseReasons = <String>{};
+
+  /// Bumped to cancel a running dev auto-solve.
+  int _autoToken = 0;
 
   @override
   GameState? build() {
@@ -47,6 +52,7 @@ class GameController extends Notifier<GameState?> {
   /// this level exists, it is restored exactly.
   Future<void> startLevel(int levelId, {bool resume = true}) async {
     final token = ++_loadToken;
+    stopAutoSolve();
     final level = await ref.read(levelRepositoryProvider).getLevel(levelId);
     if (token != _loadToken) return; // superseded by a newer load
     _timer?.cancel();
@@ -71,6 +77,7 @@ class GameController extends Notifier<GameState?> {
   void restart() {
     final s = state;
     if (s == null) return;
+    stopAutoSolve();
     _timer?.cancel();
     state = _fresh(s.level).copyWith(isPaused: _pauseReasons.isNotEmpty);
     _audio.play(Sfx.tap);
@@ -122,6 +129,7 @@ class GameController extends Notifier<GameState?> {
   void tapTube(int index) {
     final s = state;
     if (s == null || !s.canInteract || s.isAnimating) return;
+    if (ref.read(autoSolveProvider)) return;
     if (index < 0 || index >= s.tubes.length) return;
     final selected = s.selectedTubeIndex;
 
@@ -153,9 +161,11 @@ class GameController extends Notifier<GameState?> {
     );
   }
 
-  void _commitMove(int from, int to) {
+  /// [count] lets the dev auto-solver move exactly as many balls as the
+  /// solver planned (it ignores mystery-hidden limits).
+  void _commitMove(int from, int to, {int? count}) {
     final s = state!;
-    final count = rules.movableCount(
+    count ??= rules.movableCount(
       s.tubes,
       from,
       to,
@@ -361,6 +371,84 @@ class GameController extends Notifier<GameState?> {
   }
 
   // ---------------------------------------------------------------------------
+  // Dev: auto-solve
+  // ---------------------------------------------------------------------------
+
+  /// Dev tool: solves the board from its current position and plays the
+  /// solution move by move with the normal flight animations.
+  Future<AutoSolveResult> autoSolve({
+    Duration stepDelay = const Duration(milliseconds: 220),
+  }) async {
+    final s = state;
+    if (s == null || !s.canInteract || s.isAnimating) {
+      return AutoSolveResult.busy;
+    }
+    final token = ++_autoToken;
+    ref.read(autoSolveProvider.notifier).set(true);
+    state = s.copyWith(isBusy: true, selectedTubeIndex: null);
+    final result = await _runSolve(
+      ref.read(backgroundRunnerProvider),
+      GameRulesService.toRaw(s.tubes),
+      s.level.tubeCapacity,
+    );
+    final now = state;
+    if (now == null || now.sessionId != s.sessionId || token != _autoToken) {
+      return AutoSolveResult.stopped;
+    }
+    state = now.copyWith(isBusy: false);
+    if (!result.solvable) {
+      stopAutoSolve();
+      return result.exhausted
+          ? AutoSolveResult.tooHard
+          : AutoSolveResult.unsolvable;
+    }
+
+    bool alive() {
+      final c = state;
+      return c != null && c.sessionId == s.sessionId && token == _autoToken;
+    }
+
+    // The solver lists single-ball moves; one tap moves a same-color run, so
+    // consecutive identical moves are one step of `count` balls.
+    final steps = <(int, int, int)>[];
+    for (final m in result.moves) {
+      final last = steps.lastOrNull;
+      if (last != null && last.$1 == m.from && last.$2 == m.to) {
+        steps[steps.length - 1] = (m.from, m.to, last.$3 + 1);
+      } else {
+        steps.add((m.from, m.to, 1));
+      }
+    }
+
+    for (final (from, to, count) in steps) {
+      // Wait for the previous flight to land and for any pause to end.
+      while (alive() && (state!.isAnimating || state!.isPaused)) {
+        await Future<void>.delayed(const Duration(milliseconds: 16));
+      }
+      if (!alive()) return AutoSolveResult.stopped;
+      await Future<void>.delayed(stepDelay);
+      if (!alive()) return AutoSolveResult.stopped;
+      final c = state!;
+      if (!c.canInteract || rules.movableCount(c.tubes, from, to) < count) {
+        stopAutoSolve();
+        return AutoSolveResult.stopped;
+      }
+      _commitMove(from, to, count: count);
+    }
+    stopAutoSolve();
+    return AutoSolveResult.solved;
+  }
+
+  void stopAutoSolve() {
+    _autoToken++;
+    if (ref.read(autoSolveProvider)) {
+      ref.read(autoSolveProvider.notifier).set(false);
+    }
+    final s = state;
+    if (s != null && s.isBusy) state = s.copyWith(isBusy: false);
+  }
+
+  // ---------------------------------------------------------------------------
   // Pause / timer
   // ---------------------------------------------------------------------------
 
@@ -521,6 +609,14 @@ Future<List<List<int>>> _runShuffle(
   int seed,
 ) => runner.run(() => computeShuffle(colors, current, capacity, seed));
 
+Future<SolverResult> _runSolve(
+  BackgroundRunner runner,
+  RawTubes tubes,
+  int capacity,
+) => runner.run(
+  () => const PuzzleSolverService().solve(tubes, capacity, nodeLimit: 400000),
+);
+
 /// Top-level so it can run inside an isolate.
 List<List<int>> computeShuffle(
   List<int> colorsByToken,
@@ -536,4 +632,17 @@ List<List<int>> computeShuffle(
 
 final gameControllerProvider = NotifierProvider<GameController, GameState?>(
   GameController.new,
+);
+
+enum AutoSolveResult { solved, stopped, unsolvable, tooHard, busy }
+
+/// True while the dev auto-solver is playing a solution.
+class AutoSolveFlag extends Notifier<bool> {
+  @override
+  bool build() => false;
+  void set(bool v) => state = v;
+}
+
+final autoSolveProvider = NotifierProvider<AutoSolveFlag, bool>(
+  AutoSolveFlag.new,
 );

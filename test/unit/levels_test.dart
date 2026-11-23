@@ -17,9 +17,9 @@ void main() {
   final repo = LevelRepository();
   const solver = PuzzleSolverService();
 
-  test('there are 1000 curated levels', () {
-    expect(GameConstants.curatedLevelCount, 1000);
-    expect(repo.totalLevels, 1000);
+  test('there are 2000 curated levels', () {
+    expect(GameConstants.curatedLevelCount, 2000);
+    expect(repo.totalLevels, 2000);
     for (var id = 1; id <= GameConstants.curatedLevelCount; id++) {
       expect(repo.isCurated(id), isTrue);
     }
@@ -102,25 +102,25 @@ void main() {
   test('completing each level unlocks exactly the next one', () {
     const svc = LevelProgressService();
     var p = GameProgress();
-    for (var id = 1; id < 1000; id++) {
+    for (var id = 1; id < 2000; id++) {
       expect(svc.canPlay(p, id), isTrue);
       expect(svc.canPlay(p, id + 1), isFalse);
       p = svc.completeLevel(p, id, 3);
     }
-    expect(p.highestUnlockedLevel, 1000);
-    p = svc.completeLevel(p, 1000, 3);
-    expect(p.highestUnlockedLevel, 1000);
+    expect(p.highestUnlockedLevel, 2000);
+    p = svc.completeLevel(p, 2000, 3);
+    expect(p.highestUnlockedLevel, 2000);
   });
 
-  test('all 1000 levels are distinct', () {
+  test('all 2000 levels are distinct', () {
     final keys = {
-      for (var id = 1; id <= 1000; id++) canonicalKey(repo.curated(id).initialTubeArrangement),
+      for (var id = 1; id <= 2000; id++) canonicalKey(repo.curated(id).initialTubeArrangement),
     };
-    expect(keys.length, 1000);
+    expect(keys.length, 2000);
   });
 
   test('level data is reproducible from the seeded builder', () {
-    for (final id in [7, 150, 503, 777, 1000]) {
+    for (final id in [7, 150, 503, 777, 1000, 1001, 1253, 1500, 1501, 1764, 2000]) {
       final b = buildLevel(id);
       expect(b.tubes, repo.curated(id).initialTubeArrangement, reason: 'level $id');
       expect(b.capacity, repo.curated(id).tubeCapacity);
@@ -134,7 +134,7 @@ void main() {
       expect(repo.curated(id).mystery, isFalse);
     }
     expect(repo.curated(25).isSpecial, isTrue);
-    for (var id = 1; id <= 1000; id++) {
+    for (var id = 1; id <= 2000; id++) {
       final l = repo.curated(id);
       expect(l.isTimed && l.mystery, isFalse, reason: 'level $id: timed + mystery');
     }
@@ -180,6 +180,95 @@ void main() {
         return sum / sample.length;
       }
       expect(traps(legend), greaterThan(traps(challenge)));
+    });
+  });
+
+  group('mythic levels 1001-1500 are tougher than legend 501-1000', () {
+    List<LevelConfig> range(int a, int b) => [for (var i = a; i <= b; i++) repo.curated(i)];
+    double avg(List<LevelConfig> ls, num Function(LevelConfig) f) =>
+        ls.map(f).reduce((a, b) => a + b) / ls.length;
+    final legend = range(501, 1000);
+    final mythic = range(1001, 1500);
+
+    test('labelled Mythic', () {
+      expect(mythic.every((l) => l.difficulty == Difficulty.mythic), isTrue);
+      expect(repo.curated(1001).newMechanic, contains('Mythic'));
+    });
+
+    test('longer solutions and more colors', () {
+      expect(avg(mythic, (l) => l.parMoves!), greaterThan(avg(legend, (l) => l.parMoves!) * 1.1));
+      expect(avg(mythic, (l) => l.colorCount), greaterThan(avg(legend, (l) => l.colorCount)));
+      expect(mythic.where((l) => l.colorCount >= 12).length, greaterThanOrEqualTo(200));
+      expect(mythic.where((l) => l.colorCount == 13).length, greaterThan(100));
+    });
+
+    test('tight boards, mystery and special levels', () {
+      expect(mythic.where((l) => l.emptyTubeCount == 1).length, greaterThanOrEqualTo(90));
+      expect(mythic.where((l) => l.mystery).length, greaterThan(legend.where((l) => l.mystery).length * 1.2));
+      expect(mythic.where((l) => l.isSpecial).length, greaterThan(legend.where((l) => l.isSpecial).length));
+    });
+
+    test('second half is tougher than the first half', () {
+      expect(avg(range(1251, 1500), (l) => l.parMoves!), greaterThan(avg(range(1001, 1250), (l) => l.parMoves!)));
+      expect(avg(range(1251, 1500), (l) => l.colorCount), greaterThan(avg(range(1001, 1250), (l) => l.colorCount)));
+    });
+
+    test('mistakes are punished more often (trap rate)', () {
+      const gen = LevelGeneratorService();
+      double traps(List<LevelConfig> ls) {
+        var sum = 0.0;
+        final sample = [for (var i = 0; i < ls.length; i += 8) ls[i]];
+        for (final l in sample) {
+          sum += gen.trapRate(l.initialTubeArrangement, l.tubeCapacity, SeededRandom(l.levelId), samples: 12);
+        }
+        return sum / sample.length;
+      }
+      expect(traps(mythic), greaterThan(traps(legend)));
+    });
+  });
+
+  group('immortal levels 1501-2000 are tougher than mythic 1001-1500', () {
+    List<LevelConfig> range(int a, int b) => [for (var i = a; i <= b; i++) repo.curated(i)];
+    double avg(List<LevelConfig> ls, num Function(LevelConfig) f) =>
+        ls.map(f).reduce((a, b) => a + b) / ls.length;
+    final mythic = range(1001, 1500);
+    final immortal = range(1501, 2000);
+
+    test('labelled Immortal', () {
+      expect(immortal.every((l) => l.difficulty == Difficulty.immortal), isTrue);
+      expect(repo.curated(1501).newMechanic, contains('Immortal'));
+    });
+
+    test('longer solutions and more colors', () {
+      expect(avg(immortal, (l) => l.parMoves!), greaterThan(avg(mythic, (l) => l.parMoves!) * 1.05));
+      expect(avg(immortal, (l) => l.colorCount), greaterThan(avg(mythic, (l) => l.colorCount)));
+      expect(immortal.where((l) => l.colorCount == 13).length, greaterThanOrEqualTo(200));
+    });
+
+    test('tight boards and mystery on almost every level', () {
+      expect(immortal.where((l) => l.emptyTubeCount == 1).length, greaterThanOrEqualTo(90));
+      expect(avg(immortal.where((l) => l.emptyTubeCount == 1).toList(), (l) => l.colorCount),
+          greaterThan(avg(mythic.where((l) => l.emptyTubeCount == 1).toList(), (l) => l.colorCount)));
+      expect(immortal.where((l) => l.mystery).length, greaterThan(mythic.where((l) => l.mystery).length));
+      expect(immortal.where((l) => l.mystery).length, 475);
+    });
+
+    test('second half is tougher than the first half', () {
+      expect(avg(range(1751, 2000), (l) => l.parMoves!), greaterThan(avg(range(1501, 1750), (l) => l.parMoves!)));
+      expect(avg(range(1751, 2000), (l) => l.colorCount), greaterThan(avg(range(1501, 1750), (l) => l.colorCount)));
+    });
+
+    test('mistakes are punished at least as often (trap rate)', () {
+      const gen = LevelGeneratorService();
+      double traps(List<LevelConfig> ls) {
+        var sum = 0.0;
+        final sample = [for (var i = 0; i < ls.length; i += 8) ls[i]];
+        for (final l in sample) {
+          sum += gen.trapRate(l.initialTubeArrangement, l.tubeCapacity, SeededRandom(l.levelId), samples: 12);
+        }
+        return sum / sample.length;
+      }
+      expect(traps(immortal), greaterThanOrEqualTo(traps(mythic) * 0.95));
     });
   });
 }

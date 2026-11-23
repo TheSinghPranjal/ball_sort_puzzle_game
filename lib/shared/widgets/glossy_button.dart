@@ -199,59 +199,69 @@ class PillButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(height / 2),
-        onTap: onTap,
-        child: Ink(
-          height: height,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(height / 2),
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: colors,
-            ),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.4),
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: colors.last.withValues(alpha: 0.5),
-                blurRadius: 14,
-                offset: const Offset(0, 5),
-              ),
-            ],
+    final radius = BorderRadius.circular(height / 2);
+    // The shadow is painted outside the Material: an Ink shadow is drawn on
+    // the Material's rectangular ink layer and gets clipped to a square.
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: radius,
+        boxShadow: [
+          BoxShadow(
+            color: colors.last.withValues(alpha: 0.5),
+            blurRadius: 14,
+            offset: const Offset(0, 5),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (icon != null) ...[
-                Icon(icon, color: Colors.white, size: fontSize * 1.2),
-                const SizedBox(width: 8),
-              ],
-              Flexible(
-                child: Text(
-                  label,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: fontSize,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1,
-                    shadows: const [
-                      Shadow(
-                        color: Colors.black26,
-                        blurRadius: 3,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: radius),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          borderRadius: radius,
+          onTap: onTap,
+          child: Ink(
+            height: height,
+            decoration: BoxDecoration(
+              borderRadius: radius,
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: colors,
+              ),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.4),
+                width: 1.5,
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (icon != null) ...[
+                  Icon(icon, color: Colors.white, size: fontSize * 1.2),
+                  const SizedBox(width: 8),
+                ],
+                Flexible(
+                  child: Text(
+                    label,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: fontSize,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1,
+                      shadows: const [
+                        Shadow(
+                          color: Colors.black26,
+                          blurRadius: 3,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -55,7 +56,8 @@ class PowerUpBar extends ConsumerWidget {
     final busy = ref.watch(
       gameControllerProvider.select((s) => s?.isBusy ?? false),
     );
-    if (available.isEmpty) return const SizedBox.shrink();
+    final solving = ref.watch(autoSolveProvider);
+    if (available.isEmpty && !kDebugMode) return const SizedBox.shrink();
     final c = ref.read(gameControllerProvider.notifier);
 
     Widget button(
@@ -75,7 +77,7 @@ class PowerUpBar extends ConsumerWidget {
           label: label,
           semanticLabel: '$label, $count left',
           badge: count,
-          enabled: enabled && !busy,
+          enabled: enabled && !busy && !solving,
           onTap: onTap,
         ),
       );
@@ -94,6 +96,34 @@ class PowerUpBar extends ConsumerWidget {
             _feedback(context, c.undo(), 'undos');
           },
         ),
+        if (kDebugMode)
+          GlossyIconButton(
+            icon: solving ? Icons.stop_rounded : Icons.auto_fix_high_rounded,
+            size: buttonSize,
+            label: solving ? 'STOP' : 'SOLVE',
+            semanticLabel: solving ? 'Stop auto-solve' : 'Auto-solve (dev)',
+            enabled: solving || !busy,
+            onTap: () async {
+              if (solving) {
+                c.stopAutoSolve();
+                return;
+              }
+              final r = await c.autoSolve();
+              if (!context.mounted) return;
+              final msg = switch (r) {
+                AutoSolveResult.unsolvable =>
+                  'No solution from this position - undo some moves.',
+                AutoSolveResult.tooHard =>
+                  'Solver gave up (search limit) - try undoing a few moves.',
+                _ => null,
+              };
+              if (msg != null) {
+                ScaffoldMessenger.of(context)
+                  ..hideCurrentSnackBar()
+                  ..showSnackBar(SnackBar(content: Text(msg)));
+              }
+            },
+          ),
         button(
           PowerUpType.shuffle,
           Icons.shuffle_rounded,

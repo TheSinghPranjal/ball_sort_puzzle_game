@@ -110,6 +110,12 @@ class AppColors {
       Color(0xFF9EA6FF),
       Color(0xFF1C1C7A),
     ),
+    BallColorSpec(
+      'Charcoal',
+      Color(0xFF4A4E5C),
+      Color(0xFF9DA3B4),
+      Color(0xFF23252E),
+    ),
   ];
 
   static BallColorSpec ball(int colorId) => balls[colorId % balls.length];

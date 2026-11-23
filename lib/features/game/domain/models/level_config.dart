@@ -1,7 +1,17 @@
 import 'ball.dart';
 import 'tube.dart';
 
-enum Difficulty { tutorial, easy, medium, hard, expert, master, legend }
+enum Difficulty {
+  tutorial,
+  easy,
+  medium,
+  hard,
+  expert,
+  master,
+  legend,
+  mythic,
+  immortal,
+}
 
 extension DifficultyLabel on Difficulty {
   String get label => switch (this) {
@@ -12,6 +22,8 @@ extension DifficultyLabel on Difficulty {
     Difficulty.expert => 'Expert',
     Difficulty.master => 'Master',
     Difficulty.legend => 'Legend',
+    Difficulty.mythic => 'Mythic',
+    Difficulty.immortal => 'Immortal',
   };
 }
 

@@ -54,8 +54,17 @@ class LevelPlan {
   /// Curated special (tall-tube) levels inside 1-100.
   static const _curatedSpecials = {25: 5, 45: 6, 65: 7, 85: 8, 100: 9};
 
+  static const mythicStart = 1001;
+  static const mythicEnd = 1500;
+  static const immortalStart = 1501;
+  static const immortalEnd = 2000;
+
   static LevelPlanEntry entry(int id) {
-    final base = id >= legendStart ? _legend(id) : _base(id);
+    final base = id >= immortalStart
+        ? _immortal(id)
+        : id >= mythicStart
+        ? _mythic(id)
+        : (id >= legendStart ? _legend(id) : _base(id));
     final mystery = base.mystery || _mysteryFor(id);
     final mechanic =
         base.newMechanic ??
@@ -492,6 +501,318 @@ class LevelPlan {
       mystery: mystery,
       newMechanic: id == legendStart
           ? 'Legend levels: brutal boards, little room for mistakes'
+          : null,
+    );
+  }
+
+  /// Mythic pack 1001-1500: built on the Legend recipe, pushed one step
+  /// further on every axis.
+  ///
+  /// - dense: 12-13 colors (the full palette), fully alternating;
+  /// - tight: 9-11 colors with only ONE spare tube;
+  /// - narrow: 10-11 colors in 5-ball tubes, fully alternating, every time;
+  /// - tall (6 balls, 10-11 colors) and giant (10 balls, 5-6 colors) specials;
+  /// - mystery balls on nearly every level (all but 1 in 10 at the end);
+  /// - candidates picked from the very top of the difficulty ranking (higher
+  ///   trap sampling, quantile 0.8 -> 1.0).
+  static LevelPlanEntry _mythic(int id) {
+    final t = (id - mythicStart) / (mythicEnd - mythicStart);
+    final quantile = 0.8 + 0.2 * t;
+    final mystery = t < 0.5 ? id % 6 != 0 : id % 10 != 0;
+    final kind = id % 10;
+    LevelSpec spec;
+    List<LevelSpec> fallbacks;
+    if (kind == 0) {
+      final colors = t < 0.5 ? 5 : 6;
+      spec = LevelSpec(
+        colors: colors,
+        emptyTubes: 2,
+        capacity: 10,
+        maxRun: 2,
+        minMoves: 75,
+        quantile: quantile,
+        candidates: 6,
+        trapSamples: 12,
+      );
+      fallbacks = [
+        const LevelSpec(
+          colors: 5,
+          emptyTubes: 2,
+          capacity: 10,
+          maxRun: 2,
+          candidates: 2,
+        ),
+        const LevelSpec(
+          colors: 5,
+          emptyTubes: 2,
+          capacity: 8,
+          maxRun: 3,
+          candidates: 2,
+        ),
+      ];
+    } else if (kind == 5) {
+      final colors = t < 0.5 ? 10 : 11;
+      spec = LevelSpec(
+        colors: colors,
+        emptyTubes: 2,
+        capacity: 6,
+        maxRun: 1,
+        minMoves: 100,
+        quantile: quantile,
+        candidates: 6,
+        trapSamples: 12,
+      );
+      fallbacks = [
+        LevelSpec(
+          colors: colors,
+          emptyTubes: 2,
+          capacity: 6,
+          maxRun: 2,
+          candidates: 2,
+        ),
+        const LevelSpec(
+          colors: 10,
+          emptyTubes: 2,
+          capacity: 6,
+          maxRun: 2,
+          candidates: 2,
+        ),
+      ];
+    } else if (kind == 3 || kind == 7) {
+      final colors = 9 + (t * 2.99).floor();
+      spec = LevelSpec(
+        colors: colors,
+        emptyTubes: 1,
+        maxRun: 2,
+        minMoves: 42,
+        quantile: quantile,
+        candidates: 5,
+        trapSamples: 12,
+        maxAttempts: 5000,
+      );
+      fallbacks = [
+        const LevelSpec(
+          colors: 9,
+          emptyTubes: 1,
+          maxRun: 2,
+          candidates: 3,
+          trapSamples: 10,
+          maxAttempts: 5000,
+        ),
+        const LevelSpec(
+          colors: 8,
+          emptyTubes: 1,
+          maxRun: 2,
+          candidates: 2,
+          maxAttempts: 5000,
+        ),
+        LevelSpec(colors: colors + 1, emptyTubes: 2, maxRun: 1, candidates: 3),
+      ];
+    } else if (kind == 4 || kind == 8) {
+      final colors = t < 0.5 ? 10 : 11;
+      spec = LevelSpec(
+        colors: colors,
+        emptyTubes: 2,
+        capacity: 5,
+        maxRun: 1,
+        minMoves: 80,
+        quantile: quantile,
+        candidates: 6,
+        trapSamples: 12,
+      );
+      fallbacks = [
+        LevelSpec(
+          colors: colors,
+          emptyTubes: 2,
+          capacity: 5,
+          maxRun: 2,
+          candidates: 2,
+        ),
+      ];
+    } else {
+      final colors = t < 0.3 ? 12 : 13;
+      spec = LevelSpec(
+        colors: colors,
+        emptyTubes: 2,
+        maxRun: 1,
+        minMoves: 64,
+        quantile: quantile,
+        candidates: 6,
+        trapSamples: 12,
+      );
+      fallbacks = [
+        LevelSpec(colors: colors, emptyTubes: 2, maxRun: 2, candidates: 2),
+        const LevelSpec(colors: 12, emptyTubes: 2, maxRun: 2, candidates: 2),
+      ];
+    }
+    return LevelPlanEntry(
+      id: id,
+      difficulty: Difficulty.mythic,
+      spec: spec,
+      fallbackSpecs: fallbacks,
+      moveTarget: true,
+      mystery: mystery,
+      newMechanic: id == mythicStart
+          ? 'Mythic levels: the full palette, almost no room to breathe'
+          : null,
+    );
+  }
+
+  /// Immortal pack 1501-2000: the Mythic recipe with every board at the top
+  /// end of what the 13-color palette allows.
+  ///
+  /// - dense: always all 13 colors, fully alternating;
+  /// - tight: 10-12 colors with only ONE spare tube;
+  /// - narrow: 11-12 colors in 5-ball tubes, fully alternating;
+  /// - tall: 11-12 colors in 6-ball tubes, fully alternating;
+  /// - giant: 6-7 colors in 10-ball tubes;
+  /// - mystery balls on every level except 1 in 20;
+  /// - candidates picked from quantile 0.9 -> 1.0 with heavier trap sampling.
+  static LevelPlanEntry _immortal(int id) {
+    if (id > immortalEnd) throw RangeError.range(id, 1, immortalEnd, 'id');
+    final t = (id - immortalStart) / (immortalEnd - immortalStart);
+    final quantile = 0.9 + 0.1 * t;
+    final mystery = id % 20 != 0;
+    final kind = id % 10;
+    LevelSpec spec;
+    List<LevelSpec> fallbacks;
+    if (kind == 0) {
+      final colors = t < 0.5 ? 6 : 7;
+      spec = LevelSpec(
+        colors: colors,
+        emptyTubes: 2,
+        capacity: 10,
+        maxRun: 2,
+        minMoves: 90,
+        quantile: quantile,
+        candidates: 6,
+        trapSamples: 14,
+      );
+      fallbacks = [
+        const LevelSpec(
+          colors: 6,
+          emptyTubes: 2,
+          capacity: 10,
+          maxRun: 2,
+          candidates: 2,
+        ),
+        const LevelSpec(
+          colors: 5,
+          emptyTubes: 2,
+          capacity: 10,
+          maxRun: 3,
+          candidates: 2,
+        ),
+      ];
+    } else if (kind == 5) {
+      final colors = t < 0.5 ? 11 : 12;
+      spec = LevelSpec(
+        colors: colors,
+        emptyTubes: 2,
+        capacity: 6,
+        maxRun: 1,
+        minMoves: 110,
+        quantile: quantile,
+        candidates: 6,
+        trapSamples: 14,
+      );
+      fallbacks = [
+        LevelSpec(
+          colors: colors,
+          emptyTubes: 2,
+          capacity: 6,
+          maxRun: 2,
+          candidates: 2,
+        ),
+        const LevelSpec(
+          colors: 11,
+          emptyTubes: 2,
+          capacity: 6,
+          maxRun: 2,
+          candidates: 2,
+        ),
+      ];
+    } else if (kind == 3 || kind == 7) {
+      final colors = 10 + (t * 2.99).floor();
+      spec = LevelSpec(
+        colors: colors,
+        emptyTubes: 1,
+        maxRun: 2,
+        minMoves: 46,
+        quantile: quantile,
+        candidates: 5,
+        trapSamples: 14,
+        maxAttempts: 6000,
+      );
+      fallbacks = [
+        const LevelSpec(
+          colors: 10,
+          emptyTubes: 1,
+          maxRun: 2,
+          candidates: 3,
+          trapSamples: 12,
+          maxAttempts: 6000,
+        ),
+        const LevelSpec(
+          colors: 9,
+          emptyTubes: 1,
+          maxRun: 2,
+          candidates: 2,
+          maxAttempts: 6000,
+        ),
+        const LevelSpec(colors: 13, emptyTubes: 2, maxRun: 1, candidates: 3),
+      ];
+    } else if (kind == 4 || kind == 8) {
+      final colors = t < 0.5 ? 11 : 12;
+      spec = LevelSpec(
+        colors: colors,
+        emptyTubes: 2,
+        capacity: 5,
+        maxRun: 1,
+        minMoves: 90,
+        quantile: quantile,
+        candidates: 6,
+        trapSamples: 14,
+      );
+      fallbacks = [
+        LevelSpec(
+          colors: colors,
+          emptyTubes: 2,
+          capacity: 5,
+          maxRun: 2,
+          candidates: 2,
+        ),
+        const LevelSpec(
+          colors: 11,
+          emptyTubes: 2,
+          capacity: 5,
+          maxRun: 2,
+          candidates: 2,
+        ),
+      ];
+    } else {
+      spec = LevelSpec(
+        colors: 13,
+        emptyTubes: 2,
+        maxRun: 1,
+        minMoves: 70,
+        quantile: quantile,
+        candidates: 6,
+        trapSamples: 14,
+      );
+      fallbacks = [
+        const LevelSpec(colors: 13, emptyTubes: 2, maxRun: 2, candidates: 2),
+      ];
+    }
+    return LevelPlanEntry(
+      id: id,
+      difficulty: Difficulty.immortal,
+      spec: spec,
+      fallbackSpecs: fallbacks,
+      moveTarget: true,
+      mystery: mystery,
+      newMechanic: id == immortalStart
+          ? 'Immortal levels: every board pushed to the limit'
           : null,
     );
   }

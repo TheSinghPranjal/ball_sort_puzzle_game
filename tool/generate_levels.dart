@@ -1,7 +1,8 @@
 // Development tool: builds all levels and writes
 // lib/features/game/data/level_data.dart.
 //
-//   dart run tool/generate_levels.dart
+//   dart run tool/generate_levels.dart              # rebuild every level
+//   dart run tool/generate_levels.dart --from 1501  # keep 1-1500, append rest
 //
 // Every level is generated from a fixed seed (reproducible), validated by the
 // puzzle solver (solution replayed through the game rules), checked for
@@ -12,10 +13,16 @@ import 'dart:io';
 import 'package:ball_sort_puzzle_game/core/constants/game_constants.dart';
 import 'package:ball_sort_puzzle_game/core/utils/game_helpers.dart';
 import 'package:ball_sort_puzzle_game/features/game/data/level_builder.dart';
+import 'package:ball_sort_puzzle_game/features/game/data/level_data.dart';
 import 'package:ball_sort_puzzle_game/features/game/data/level_plan.dart';
 import 'package:ball_sort_puzzle_game/features/game/domain/services/puzzle_solver_service.dart';
 
-void main() {
+void main(List<String> args) {
+  final fromIdx = args.indexOf('--from');
+  final from = fromIdx >= 0 ? int.parse(args[fromIdx + 1]) : 1;
+  if (from < 1 || from - 1 > curatedLevelData.length) {
+    throw ArgumentError('--from must be within 1..${curatedLevelData.length + 1}');
+  }
   const solver = PuzzleSolverService();
   final seen = <String>{};
   final out = StringBuffer()
@@ -25,8 +32,18 @@ void main() {
     ..writeln()
     ..writeln('const List<List<Object>> curatedLevelData = [');
 
+  // Keep already-shipped levels verbatim (they still count for uniqueness).
+  for (var id = 1; id < from; id++) {
+    final raw = curatedLevelData[id - 1];
+    final tubes = [
+      for (final t in raw[0] as List) [for (final c in t as List) c as int],
+    ];
+    seen.add(canonicalKey(tubes));
+    out.writeln('  [${_fmt(tubes)}, ${raw[1]}, ${raw[2]}], // $id');
+  }
+
   final sw = Stopwatch()..start();
-  for (var id = 1; id <= GameConstants.curatedLevelCount; id++) {
+  for (var id = from; id <= GameConstants.curatedLevelCount; id++) {
     final e = LevelPlan.entry(id);
     final b = buildLevel(id, avoid: seen);
     final key = canonicalKey(b.tubes);
@@ -37,7 +54,7 @@ void main() {
     }
     final colors = colorCounts(b.tubes).length;
     final empties = b.tubes.where((t) => t.isEmpty).length;
-    if (id <= 100 || id % 25 == 0 || id >= 990) {
+    if (id <= 100 || id % 25 == 0 || id >= GameConstants.curatedLevelCount - 10) {
       stdout.writeln('L$id ${e.difficulty.name.padRight(8)} c=$colors e=$empties cap=${b.capacity} '
           'tubes=${b.tubes.length} par=${b.par} traps=${b.trapRate.toStringAsFixed(1)}'
           '${e.mystery ? ' mystery' : ''} [${b.source}] ${sw.elapsed.inSeconds}s');

@@ -10,7 +10,7 @@ class GameConstants {
 
   /// Levels shipped as solver-verified static data (built offline by
   /// tool/generate_levels.dart).
-  static const int curatedLevelCount = 1000;
+  static const int curatedLevelCount = 2000;
 
   /// Total playable levels.
   static const int totalLevelCount = curatedLevelCount;

@@ -16,7 +16,10 @@ void main() {
   GameController ctrl() => c.read(gameControllerProvider.notifier);
   GameState st() => c.read(gameControllerProvider)!;
   List<List<int>> colors() => [for (final t in st().tubes) t.colorIds];
-  Set<int> ballIds() => {for (final t in st().tubes) for (final b in t.balls) b.id};
+  Set<int> ballIds() => {
+    for (final t in st().tubes)
+      for (final b in t.balls) b.id,
+  };
 
   /// Plays a valid move and finishes its animation.
   void move(int from, int to) {
@@ -61,15 +64,18 @@ void main() {
       expect(st().moveCount, 0);
     });
 
-    test('invalid destination with balls switches the selection, no move counted', () async {
-      await ctrl().startLevel(2); // [[0,0,1,1],[1,1,0,0],[]]
-      ctrl().tapTube(0); // top = 1
-      ctrl().tapTube(1); // top = 0 -> invalid
-      expect(st().selectedTubeIndex, 1);
-      expect(st().moveCount, 0);
-      expect(st().undoHistory, isEmpty);
-      expect(st().lastEvent, isA<InvalidMoveEvent>());
-    });
+    test(
+      'invalid destination with balls switches the selection, no move counted',
+      () async {
+        await ctrl().startLevel(2); // [[0,0,1,1],[1,1,0,0],[]]
+        ctrl().tapTube(0); // top = 1
+        ctrl().tapTube(1); // top = 0 -> invalid
+        expect(st().selectedTubeIndex, 1);
+        expect(st().moveCount, 0);
+        expect(st().undoHistory, isEmpty);
+        expect(st().lastEvent, isA<InvalidMoveEvent>());
+      },
+    );
 
     test('taps are ignored while a ball is in flight', () async {
       await ctrl().startLevel(2);
@@ -88,7 +94,11 @@ void main() {
       await ctrl().startLevel(2);
       move(0, 2);
       // Both 1s on top of tube 0 travel together (one move).
-      expect(colors(), [[0, 0], [1, 1, 0, 0], [1, 1]]);
+      expect(colors(), [
+        [0, 0],
+        [1, 1, 0, 0],
+        [1, 1],
+      ]);
       expect(st().moveCount, 1);
       expect(st().undoHistory.length, 1);
       expect(ballIds().length, 8);
@@ -116,37 +126,46 @@ void main() {
       expect(r.moved.length, 3);
     });
 
-    test('solving a level completes it, saves progress and unlocks the next', () async {
-      await ctrl().startLevel(1);
-      final hint = const PuzzleSolverService().nextHint(GameRulesService.toRaw(st().tubes), 4)!;
-      move(hint.from, hint.to);
-      expect(st().isLevelCompleted, isTrue);
-      expect(st().stars, 3);
-      final p = c.read(progressProvider);
-      expect(p.isCompleted(1), isTrue);
-      expect(p.highestUnlockedLevel, 2);
-      // Input is disabled after completion.
-      ctrl().tapTube(0);
-      expect(st().selectedTubeIndex, isNull);
-    });
+    test(
+      'solving a level completes it, saves progress and unlocks the next',
+      () async {
+        await ctrl().startLevel(1);
+        final hint = const PuzzleSolverService().nextHint(
+          GameRulesService.toRaw(st().tubes),
+          4,
+        )!;
+        move(hint.from, hint.to);
+        expect(st().isLevelCompleted, isTrue);
+        expect(st().stars, 3);
+        final p = c.read(progressProvider);
+        expect(p.isCompleted(1), isTrue);
+        expect(p.highestUnlockedLevel, 2);
+        // Input is disabled after completion.
+        ctrl().tapTube(0);
+        expect(st().selectedTubeIndex, isNull);
+      },
+    );
 
-    test('playing the reference solution completes every tutorial level', () async {
-      for (final id in [1, 2, 3, 4, 5]) {
-        await ctrl().startLevel(id, resume: false);
-        const solver = PuzzleSolverService();
-        final reference = solver.solve(GameRulesService.toRaw(st().tubes), 4);
-        // Runs of same-coloured balls move together, so follow hints step by
-        // step instead of replaying single-ball moves.
-        var guard = 0;
-        while (!st().isLevelCompleted && guard++ < 200) {
-          final h = solver.nextHint(GameRulesService.toRaw(st().tubes), 4)!;
-          move(h.from, h.to);
+    test(
+      'playing the reference solution completes every tutorial level',
+      () async {
+        for (final id in [1, 2, 3, 4, 5]) {
+          await ctrl().startLevel(id, resume: false);
+          const solver = PuzzleSolverService();
+          final reference = solver.solve(GameRulesService.toRaw(st().tubes), 4);
+          // Runs of same-coloured balls move together, so follow hints step by
+          // step instead of replaying single-ball moves.
+          var guard = 0;
+          while (!st().isLevelCompleted && guard++ < 200) {
+            final h = solver.nextHint(GameRulesService.toRaw(st().tubes), 4)!;
+            move(h.from, h.to);
+          }
+          expect(st().isLevelCompleted, isTrue, reason: 'level $id');
+          expect(st().moveCount, lessThanOrEqualTo(reference.moves.length));
         }
-        expect(st().isLevelCompleted, isTrue, reason: 'level $id');
-        expect(st().moveCount, lessThanOrEqualTo(reference.moves.length));
-      }
-      expect(c.read(progressProvider).highestUnlockedLevel, 6);
-    });
+        expect(c.read(progressProvider).highestUnlockedLevel, 6);
+      },
+    );
 
     test('next level loads only on request', () async {
       await ctrl().startLevel(1);
@@ -162,12 +181,16 @@ void main() {
     test('undo one move restores the exact state and counter', () async {
       await ctrl().startLevel(5);
       final before = colors();
-      final ids = [for (final t in st().tubes) [for (final b in t.balls) b.id]];
+      final ids = [
+        for (final t in st().tubes) [for (final b in t.balls) b.id],
+      ];
       final (f, t) = anyLegalMove();
       move(f, t);
       expect(ctrl().undo(), PowerUpResult.applied);
       expect(colors(), before);
-      expect([for (final t in st().tubes) [for (final b in t.balls) b.id]], ids);
+      expect([
+        for (final t in st().tubes) [for (final b in t.balls) b.id],
+      ], ids);
       expect(st().moveCount, 0);
       expect(st().undoRemaining, 4);
     });
@@ -255,7 +278,12 @@ void main() {
       }
       expect(after, counts);
       expect(colors(), isNot(before));
-      expect(const PuzzleSolverService().solve(GameRulesService.toRaw(st().tubes), 4).solvable, isTrue);
+      expect(
+        const PuzzleSolverService()
+            .solve(GameRulesService.toRaw(st().tubes), 4)
+            .solvable,
+        isTrue,
+      );
       expect(st().moveCount, 0);
       ctrl().undo();
       expect(colors(), before);
@@ -301,21 +329,24 @@ void main() {
   });
 
   group('restart', () {
-    test('restores the original arrangement, tube count and counters', () async {
-      await ctrl().startLevel(1);
-      move(1, 0); // completes level 1 -> unlocks 2
-      await ctrl().startLevel(5);
-      final original = colors();
-      move(anyLegalMove().$1, anyLegalMove().$2);
-      ctrl().addTube();
-      ctrl().restart();
-      expect(colors(), original);
-      expect(st().moveCount, 0);
-      expect(st().undoHistory, isEmpty);
-      expect(st().addTubeRemaining, 2);
-      // Progress is preserved.
-      expect(c.read(progressProvider).highestUnlockedLevel, 2);
-    });
+    test(
+      'restores the original arrangement, tube count and counters',
+      () async {
+        await ctrl().startLevel(1);
+        move(1, 0); // completes level 1 -> unlocks 2
+        await ctrl().startLevel(5);
+        final original = colors();
+        move(anyLegalMove().$1, anyLegalMove().$2);
+        ctrl().addTube();
+        ctrl().restart();
+        expect(colors(), original);
+        expect(st().moveCount, 0);
+        expect(st().undoHistory, isEmpty);
+        expect(st().addTubeRemaining, 2);
+        // Progress is preserved.
+        expect(c.read(progressProvider).highestUnlockedLevel, 2);
+      },
+    );
   });
 
   group('timer', () {
@@ -363,14 +394,18 @@ void main() {
       final saved = colors();
       final moves = st().moveCount;
       final storage = c.read(localStorageProvider);
-      final raw = jsonEncode(storage.readJson(LocalStorageService.savedGameKey));
+      final raw = jsonEncode(
+        storage.readJson(LocalStorageService.savedGameKey),
+      );
       final progress = jsonEncode(c.read(progressProvider).toJson());
       c.dispose();
 
-      c = await testContainer(prefs: {
-        LocalStorageService.savedGameKey: raw,
-        LocalStorageService.progressKey: progress,
-      });
+      c = await testContainer(
+        prefs: {
+          LocalStorageService.savedGameKey: raw,
+          LocalStorageService.progressKey: progress,
+        },
+      );
       await ctrl().startLevel(5);
       expect(colors(), saved);
       expect(st().moveCount, moves);
@@ -381,15 +416,27 @@ void main() {
 
     test('a corrupted save is discarded', () async {
       c.dispose();
-      c = await testContainer(prefs: {
-        LocalStorageService.savedGameKey: jsonEncode({
-          'level': 5,
-          'tubes': [
-            {'id': 0, 'cap': 4, 'b': [{'i': 0, 'c': 0}]},
-          ],
-          'moves': 3, 'history': [], 'undo': 5, 'shuffle': 2, 'add': 2,
-        }),
-      });
+      c = await testContainer(
+        prefs: {
+          LocalStorageService.savedGameKey: jsonEncode({
+            'level': 5,
+            'tubes': [
+              {
+                'id': 0,
+                'cap': 4,
+                'b': [
+                  {'i': 0, 'c': 0},
+                ],
+              },
+            ],
+            'moves': 3,
+            'history': [],
+            'undo': 5,
+            'shuffle': 2,
+            'add': 2,
+          }),
+        },
+      );
       await ctrl().startLevel(5);
       expect(st().moveCount, 0);
       expect(st().tubes.length, st().level.tubeCount);
@@ -398,10 +445,10 @@ void main() {
 
   group('mystery balls', () {
     Set<int> hidden() => {
-          for (final t in st().tubes)
-            for (final b in t.balls)
-              if (st().isHidden(b.id)) b.id,
-        };
+      for (final t in st().tubes)
+        for (final b in t.balls)
+          if (st().isHidden(b.id)) b.id,
+    };
 
     test('only the top ball of each tube is visible at start', () async {
       await ctrl().startLevel(17);
@@ -414,33 +461,44 @@ void main() {
       }
     });
 
-    test('a ball is revealed when it reaches the top and stays revealed after undo', () async {
-      await ctrl().startLevel(17);
-      final (f, t) = anyLegalMove();
-      final under = st().tubes[f].balls[st().tubes[f].balls.length - 2];
-      expect(st().isHidden(under.id), isTrue);
-      move(f, t);
-      expect(st().isHidden(under.id), isFalse);
-      ctrl().undo();
-      expect(st().isHidden(under.id), isFalse);
-    });
+    test(
+      'a ball is revealed when it reaches the top and stays revealed after undo',
+      () async {
+        await ctrl().startLevel(17);
+        final (f, t) = anyLegalMove();
+        final under = st().tubes[f].balls[st().tubes[f].balls.length - 2];
+        expect(st().isHidden(under.id), isTrue);
+        move(f, t);
+        expect(st().isHidden(under.id), isFalse);
+        ctrl().undo();
+        expect(st().isHidden(under.id), isFalse);
+      },
+    );
 
-    test('rules and solvability are unaffected; completion reveals everything', () async {
-      await ctrl().startLevel(17);
-      final r = const PuzzleSolverService().solve(GameRulesService.toRaw(st().tubes), 4);
-      for (final m in r.moves) {
-        move(m.from, m.to);
-      }
-      expect(st().isLevelCompleted, isTrue);
-      expect(hidden(), isEmpty);
-    });
+    test(
+      'rules and solvability are unaffected; completion reveals everything',
+      () async {
+        await ctrl().startLevel(17);
+        final r = const PuzzleSolverService().solve(
+          GameRulesService.toRaw(st().tubes),
+          4,
+        );
+        for (final m in r.moves) {
+          move(m.from, m.to);
+        }
+        expect(st().isLevelCompleted, isTrue);
+        expect(hidden(), isEmpty);
+      },
+    );
 
     test('revealed balls survive an app restart', () async {
       await ctrl().startLevel(17);
       final (f, t) = anyLegalMove();
       move(f, t);
       final before = hidden();
-      final raw = jsonEncode(c.read(localStorageProvider).readJson(LocalStorageService.savedGameKey));
+      final raw = jsonEncode(
+        c.read(localStorageProvider).readJson(LocalStorageService.savedGameKey),
+      );
       c.dispose();
       c = await testContainer(prefs: {LocalStorageService.savedGameKey: raw});
       await ctrl().startLevel(17);
@@ -453,13 +511,66 @@ void main() {
     });
   });
 
-  test('special levels use tall tubes everywhere, including added tubes', () async {
-    await ctrl().startLevel(25);
-    expect(st().level.isSpecial, isTrue);
-    expect(st().tubes.every((t) => t.capacity == 6), isTrue);
-    ctrl().addTube();
-    expect(st().tubes.last.capacity, 6);
-    expect(await ctrl().shuffle(seed: 4), PowerUpResult.applied);
-    expect(st().tubes.every((t) => t.balls.length <= 6), isTrue);
+  test(
+    'special levels use tall tubes everywhere, including added tubes',
+    () async {
+      await ctrl().startLevel(25);
+      expect(st().level.isSpecial, isTrue);
+      expect(st().tubes.every((t) => t.capacity == 6), isTrue);
+      ctrl().addTube();
+      expect(st().tubes.last.capacity, 6);
+      expect(await ctrl().shuffle(seed: 4), PowerUpResult.applied);
+      expect(st().tubes.every((t) => t.balls.length <= 6), isTrue);
+    },
+  );
+
+  group('dev auto-solve', () {
+    /// Lands every flight as soon as it starts (no board widget in unit tests).
+    void autoLand() {
+      c.listen(gameControllerProvider, (_, s) {
+        final e = s?.events.whereType<BallMovedEvent>().lastOrNull;
+        if (s != null && s.isAnimating && e != null) {
+          Future.microtask(() => ctrl().onAnimationComplete(e.seq));
+        }
+      });
+    }
+
+    test('plays a full solution of level 1000 to completion', () async {
+      await ctrl().startLevel(1000, resume: false);
+      autoLand();
+      final r = await ctrl().autoSolve(stepDelay: Duration.zero);
+      expect(r, AutoSolveResult.solved);
+      expect(st().isLevelCompleted, isTrue);
+      expect(st().tubes.length, 7, reason: 'no extra tube used');
+      expect(c.read(autoSolveProvider), isFalse);
+    });
+
+    test('solves from a mid-game position too', () async {
+      await ctrl().startLevel(30, resume: false);
+      final h = const PuzzleSolverService().nextHint(
+        GameRulesService.toRaw(st().tubes),
+        st().level.tubeCapacity,
+      )!;
+      move(h.from, h.to);
+      expect(st().moveCount, 1);
+      autoLand();
+      expect(
+        await ctrl().autoSolve(stepDelay: Duration.zero),
+        AutoSolveResult.solved,
+      );
+      expect(st().isLevelCompleted, isTrue);
+    });
+
+    test('stop halts playback and re-enables input', () async {
+      await ctrl().startLevel(1000, resume: false);
+      autoLand();
+      final run = ctrl().autoSolve(stepDelay: const Duration(milliseconds: 5));
+      await Future<void>.delayed(const Duration(milliseconds: 40));
+      ctrl().stopAutoSolve();
+      expect(await run, AutoSolveResult.stopped);
+      expect(st().isLevelCompleted, isFalse);
+      expect(c.read(autoSolveProvider), isFalse);
+      expect(st().isBusy, isFalse);
+    });
   });
 }
