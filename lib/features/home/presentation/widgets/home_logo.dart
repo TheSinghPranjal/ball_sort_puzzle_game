@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../../../app/game_palette.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../../game/presentation/widgets/glass_tube_widget.dart';
 import '../../../game/presentation/widgets/glossy_ball_widget.dart';
 
@@ -37,6 +39,9 @@ class _HomeLogoState extends State<HomeLogo>
       [2, 0, 5],
     ];
     const ball = 30.0;
+    final l10n = context.l10n;
+    final palette = context.palette;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -96,26 +101,37 @@ class _HomeLogoState extends State<HomeLogo>
         ),
         const SizedBox(height: 20),
         ShaderMask(
-          shaderCallback: (r) => const LinearGradient(
+          shaderCallback: (r) => LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.white, AppColors.lavender],
+            colors: isDark
+                ? const [Colors.white, AppColors.lavender]
+                : const [AppColors.buttonBottom, Color(0xFF3A2399)],
           ).createShader(r),
-          child: const Text(
-            'BALL SORT',
+          child: Text(
+            l10n.logoTitle,
+            textAlign: TextAlign.center,
             style: TextStyle(
               color: Colors.white,
               fontSize: 48,
               fontWeight: FontWeight.w900,
               letterSpacing: 4,
-              shadows: [Shadow(color: AppColors.buttonBottom, blurRadius: 24)],
+              shadows: [
+                Shadow(
+                  color: AppColors.buttonBottom.withValues(
+                    alpha: isDark ? 1 : 0.3,
+                  ),
+                  blurRadius: 24,
+                ),
+              ],
             ),
           ),
         ),
-        const Text(
-          'COLOR  PUZZLE',
+        Text(
+          l10n.logoSubtitle,
+          textAlign: TextAlign.center,
           style: TextStyle(
-            color: AppColors.gold,
+            color: palette.highlight,
             fontSize: 18,
             fontWeight: FontWeight.w800,
             letterSpacing: 8,

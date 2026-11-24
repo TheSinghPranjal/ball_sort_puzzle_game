@@ -1,29 +1,33 @@
 import 'package:flutter/material.dart';
 
 import '../core/constants/app_colors.dart';
+import 'game_palette.dart';
 
-ThemeData buildTheme() {
+export 'game_palette.dart';
+
+ThemeData buildTheme(Brightness brightness) {
+  final isDark = brightness == Brightness.dark;
+  final palette = isDark ? GamePalette.dark : GamePalette.light;
   final base = ThemeData(
     useMaterial3: true,
-    brightness: Brightness.dark,
+    brightness: brightness,
     colorScheme: ColorScheme.fromSeed(
       seedColor: AppColors.buttonBottom,
-      brightness: Brightness.dark,
-      surface: AppColors.panelDark,
+      brightness: brightness,
+      surface: palette.panelDark,
     ),
-    scaffoldBackgroundColor: AppColors.background,
+    scaffoldBackgroundColor: palette.background,
+    extensions: [palette],
   );
   return base.copyWith(
-    snackBarTheme: const SnackBarThemeData(
+    snackBarTheme: SnackBarThemeData(
       behavior: SnackBarBehavior.floating,
-      backgroundColor: AppColors.panel,
+      backgroundColor: palette.panel,
       contentTextStyle: TextStyle(
-        color: Colors.white,
+        color: palette.text,
         fontWeight: FontWeight.w600,
       ),
     ),
-    progressIndicatorTheme: const ProgressIndicatorThemeData(
-      color: AppColors.lavender,
-    ),
+    progressIndicatorTheme: ProgressIndicatorThemeData(color: palette.accent),
   );
 }

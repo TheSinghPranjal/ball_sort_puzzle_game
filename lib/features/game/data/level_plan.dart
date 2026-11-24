@@ -31,7 +31,7 @@ class LevelPlanEntry {
   final bool timed;
   final bool moveTarget;
   final Set<PowerUpType> powerUps;
-  final String? newMechanic;
+  final LevelMechanic? newMechanic;
   final TutorialType tutorial;
   final bool mystery;
 
@@ -69,10 +69,8 @@ class LevelPlan {
     final mechanic =
         base.newMechanic ??
         (id == mysteryIntroLevel
-            ? 'Mystery balls: hidden colors reveal when they reach the top'
-            : (base.capacity > 4 && id == 25
-                  ? 'Special level: taller tubes'
-                  : null));
+            ? LevelMechanic.mystery
+            : (base.capacity > 4 && id == 25 ? LevelMechanic.tallTubes : null));
     if (mystery == base.mystery && mechanic == base.newMechanic) return base;
     return LevelPlanEntry(
       id: base.id,
@@ -137,7 +135,7 @@ class LevelPlan {
             [0],
           ],
           powerUps: {},
-          newMechanic: 'Tap a tube, then tap another to move a ball',
+          newMechanic: LevelMechanic.basicMove,
           tutorial: TutorialType.basicMove,
         );
       case 2:
@@ -150,7 +148,7 @@ class LevelPlan {
             [],
           ],
           powerUps: {},
-          newMechanic: 'Only matching colors stack',
+          newMechanic: LevelMechanic.sameColor,
           tutorial: TutorialType.sameColor,
         );
       case 3:
@@ -158,7 +156,7 @@ class LevelPlan {
           id: 3,
           difficulty: Difficulty.tutorial,
           spec: LevelSpec(colors: 3, emptyTubes: 2, maxRun: 2, quantile: 0.15),
-          newMechanic: 'Undo, Shuffle and Add Tube',
+          newMechanic: LevelMechanic.powerUps,
           tutorial: TutorialType.powerUps,
         );
       case 4:
@@ -166,7 +164,7 @@ class LevelPlan {
           id: 4,
           difficulty: Difficulty.tutorial,
           spec: LevelSpec(colors: 2, emptyTubes: 2, maxRun: 1, quantile: 1),
-          newMechanic: 'Plan several moves ahead',
+          newMechanic: LevelMechanic.planAhead,
         );
       case 5:
         return const LevelPlanEntry(
@@ -208,7 +206,7 @@ class LevelPlan {
           quantile: 0.2 + 0.6 * t,
         ),
         fallbackSpecs: [LevelSpec(colors: l[0], emptyTubes: 2, maxRun: 2)],
-        newMechanic: id == 6 ? 'Only one spare tube!' : null,
+        newMechanic: id == 6 ? LevelMechanic.oneSpareTube : null,
       );
     }
 
@@ -239,8 +237,8 @@ class LevelPlan {
         ],
         timed: _timedLevels.contains(id),
         newMechanic: spread
-            ? 'One color is scattered through nearly every tube'
-            : (id == 21 ? 'Bigger boards' : null),
+            ? LevelMechanic.scatteredColor
+            : (id == 21 ? LevelMechanic.biggerBoards : null),
       );
     }
 
@@ -263,9 +261,7 @@ class LevelPlan {
         fallbackSpecs: [LevelSpec(colors: colors, emptyTubes: 2, maxRun: 2)],
         timed: _timedLevels.contains(id),
         moveTarget: true,
-        newMechanic: id == 41
-            ? 'Move targets: finish within the goal for 3 stars'
-            : null,
+        newMechanic: id == 41 ? LevelMechanic.moveTargets : null,
       );
     }
 
@@ -499,9 +495,7 @@ class LevelPlan {
       fallbackSpecs: fallbacks,
       moveTarget: true,
       mystery: mystery,
-      newMechanic: id == legendStart
-          ? 'Legend levels: brutal boards, little room for mistakes'
-          : null,
+      newMechanic: id == legendStart ? LevelMechanic.legend : null,
     );
   }
 
@@ -652,9 +646,7 @@ class LevelPlan {
       fallbackSpecs: fallbacks,
       moveTarget: true,
       mystery: mystery,
-      newMechanic: id == mythicStart
-          ? 'Mythic levels: the full palette, almost no room to breathe'
-          : null,
+      newMechanic: id == mythicStart ? LevelMechanic.mythic : null,
     );
   }
 
@@ -811,9 +803,7 @@ class LevelPlan {
       fallbackSpecs: fallbacks,
       moveTarget: true,
       mystery: mystery,
-      newMechanic: id == immortalStart
-          ? 'Immortal levels: every board pushed to the limit'
-          : null,
+      newMechanic: id == immortalStart ? LevelMechanic.immortal : null,
     );
   }
 

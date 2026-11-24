@@ -3,7 +3,9 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../app/game_palette.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../data/progress_repository.dart';
 import '../../domain/models/level_config.dart';
 import '../../domain/services/game_rules_service.dart';
@@ -13,9 +15,14 @@ import 'board_layout.dart';
 
 /// Dims everything except [holes].
 class _SpotlightPainter extends CustomPainter {
-  _SpotlightPainter(this.holes, {this.opacity = 0.32});
+  _SpotlightPainter(
+    this.holes, {
+    this.opacity = 0.32,
+    this.ringColor = AppColors.lavender,
+  });
   final List<RRect> holes;
   final double opacity;
+  final Color ringColor;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -30,7 +37,7 @@ class _SpotlightPainter extends CustomPainter {
     final ring = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2
-      ..color = AppColors.lavender.withValues(alpha: 0.8);
+      ..color = ringColor.withValues(alpha: 0.8);
     for (final h in holes) {
       canvas.drawRRect(h, ring);
     }
@@ -38,7 +45,9 @@ class _SpotlightPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_SpotlightPainter old) =>
-      old.holes != holes || old.opacity != opacity;
+      old.holes != holes ||
+      old.opacity != opacity ||
+      old.ringColor != ringColor;
 }
 
 /// Animated dashed arc with an arrowhead from [a] to [b].
@@ -126,21 +135,26 @@ class _Caption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppColors.panelDark.withValues(alpha: 0.92),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.panelBorder, width: 1.5),
-        boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 12)],
-      ),
-      child: Text(
-        text,
-        textAlign: TextAlign.center,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 16,
-          fontWeight: FontWeight.w700,
+    final palette = context.palette;
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 250),
+      child: Container(
+        key: ValueKey(text),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+        decoration: BoxDecoration(
+          color: palette.panelDark.withValues(alpha: 0.94),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: palette.panelBorder, width: 1.5),
+          boxShadow: [BoxShadow(color: palette.shadow, blurRadius: 12)],
+        ),
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: palette.text,
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ),
     );
@@ -160,7 +174,7 @@ class _SkipButton extends StatelessWidget {
         backgroundColor: Colors.black26,
         shape: const StadiumBorder(),
       ),
-      child: const Text('Skip tutorial'),
+      child: Text(context.l10n.skipTutorial),
     );
   }
 }
@@ -220,12 +234,13 @@ class _BoardTutorialOverlayState extends ConsumerState<BoardTutorialOverlay>
       nodeLimit: 2000,
     );
     final selected = s.selectedTubeIndex;
+    final l10n = context.l10n;
 
     int? target;
     String text;
     if (selected == null) {
       target = hint?.from ?? s.tubes.indexWhere((t) => t.balls.isNotEmpty);
-      text = 'Tap to Select Ball';
+      text = l10n.tutorialTapToSelect;
     } else {
       target = (hint != null && hint.from == selected)
           ? hint.to
@@ -234,13 +249,13 @@ class _BoardTutorialOverlayState extends ConsumerState<BoardTutorialOverlay>
               orElse: () => null,
             );
       text = type == TutorialType.sameColor
-          ? 'Only balls of the same color can be stacked together.'
-          : 'Tap another tube to move the ball';
+          ? l10n.tutorialSameColor
+          : l10n.tutorialTapAnother;
     }
     if (type == TutorialType.sameColor &&
         selected == null &&
         s.moveCount == 0) {
-      text = 'Tap to Select Ball\nOnly matching colors can stack!';
+      text = l10n.tutorialSameColorIntro;
     }
 
     RRect hole(int i) => RRect.fromRectAndRadius(
@@ -261,7 +276,12 @@ class _BoardTutorialOverlayState extends ConsumerState<BoardTutorialOverlay>
         final children = <Widget>[
           Positioned.fill(
             child: IgnorePointer(
-              child: CustomPaint(painter: _SpotlightPainter(holes)),
+              child: CustomPaint(
+                painter: _SpotlightPainter(
+                  holes,
+                  ringColor: context.palette.accent,
+                ),
+              ),
             ),
           ),
         ];
@@ -350,26 +370,25 @@ class PowerUpTutorialOverlay extends ConsumerStatefulWidget {
 
 class _PowerUpTutorialOverlayState
     extends ConsumerState<PowerUpTutorialOverlay> {
-  static const _steps = [
-    (PowerUpType.undo, 'Undo', 'Take back your last move.'),
-    (
-      PowerUpType.shuffle,
-      'Shuffle',
-      'Remix the balls into a new, still-solvable puzzle.',
-    ),
-    (
-      PowerUpType.addTube,
-      'Add Tube',
-      'Get an extra empty tube for this level.',
-    ),
+  static const _types = [
+    PowerUpType.undo,
+    PowerUpType.shuffle,
+    PowerUpType.addTube,
   ];
+
+  static (String, String) _text(AppLocalizations l, PowerUpType t) =>
+      switch (t) {
+        PowerUpType.undo => (l.powerUpUndoTitle, l.powerUpUndoBody),
+        PowerUpType.shuffle => (l.powerUpShuffleTitle, l.powerUpShuffleBody),
+        PowerUpType.addTube => (l.powerUpAddTubeTitle, l.powerUpAddTubeBody),
+      };
   int _step = 0;
   Rect? _rect;
 
   void _measure() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final key = widget.buttonKeys[_steps[_step].$1];
+      final key = widget.buttonKeys[_types[_step]];
       final box = key?.currentContext?.findRenderObject() as RenderBox?;
       final me = context.findRenderObject() as RenderBox?;
       if (box == null || me == null || !box.hasSize || !me.hasSize) return;
@@ -397,9 +416,11 @@ class _PowerUpTutorialOverlayState
       return const SizedBox.shrink();
     }
     _measure();
-    final step = _steps[_step];
+    final l10n = context.l10n;
+    final palette = context.palette;
+    final (title, body) = _text(l10n, _types[_step]);
     final rect = _rect;
-    final last = _step == _steps.length - 1;
+    final last = _step == _types.length - 1;
     return LayoutBuilder(
       builder: (context, c) {
         return Stack(
@@ -432,13 +453,14 @@ class _PowerUpTutorialOverlayState
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Container(
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
                       padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
                       decoration: BoxDecoration(
-                        color: AppColors.panelDark,
+                        color: palette.panelDark,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: AppColors.panelBorder,
+                          color: palette.panelBorder,
                           width: 1.5,
                         ),
                       ),
@@ -446,9 +468,9 @@ class _PowerUpTutorialOverlayState
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            step.$2.toUpperCase(),
-                            style: const TextStyle(
-                              color: AppColors.gold,
+                            title.toUpperCase(),
+                            style: TextStyle(
+                              color: palette.highlight,
                               fontSize: 18,
                               fontWeight: FontWeight.w900,
                               letterSpacing: 1.2,
@@ -456,18 +478,18 @@ class _PowerUpTutorialOverlayState
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            step.$3,
+                            body,
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: palette.text,
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '${_step + 1} / ${_steps.length}',
-                            style: const TextStyle(color: Colors.white54),
+                            '${_step + 1} / ${_types.length}',
+                            style: TextStyle(color: palette.textMuted),
                           ),
                           const SizedBox(height: 6),
                           Row(
@@ -475,9 +497,9 @@ class _PowerUpTutorialOverlayState
                             children: [
                               TextButton(
                                 onPressed: _finish,
-                                child: const Text(
-                                  'Skip',
-                                  style: TextStyle(color: Colors.white60),
+                                child: Text(
+                                  l10n.skip,
+                                  style: TextStyle(color: palette.textMuted),
                                 ),
                               ),
                               FilledButton(
@@ -486,7 +508,7 @@ class _PowerUpTutorialOverlayState
                                 ),
                                 onPressed: () =>
                                     last ? _finish() : setState(() => _step++),
-                                child: Text(last ? 'Got it!' : 'Next'),
+                                child: Text(last ? l10n.gotIt : l10n.next),
                               ),
                             ],
                           ),
@@ -496,7 +518,7 @@ class _PowerUpTutorialOverlayState
                     Icon(
                       Icons.arrow_drop_down_rounded,
                       size: 44,
-                      color: AppColors.panelBorder,
+                      color: palette.panelBorder,
                     ),
                   ],
                 ),

@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/game_palette.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/game_constants.dart';
+import '../../../core/l10n/l10n.dart';
 import '../../../shared/audio/audio_service.dart';
 import '../../../shared/widgets/glossy_button.dart';
 import '../../../shared/widgets/space_background.dart';
@@ -30,6 +32,8 @@ class HomeScreen extends ConsumerWidget {
               .clamp(1, GameConstants.totalLevelCount);
     final stars = p.completedLevels.values.fold(0, (a, b) => a + b);
     final audio = ref.read(audioServiceProvider);
+    final l10n = context.l10n;
+    final palette = context.palette;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -54,8 +58,8 @@ class HomeScreen extends ConsumerWidget {
                             ),
                             Text(
                               ' $stars',
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: palette.text,
                                 fontSize: 18,
                                 fontWeight: FontWeight.w800,
                               ),
@@ -64,7 +68,7 @@ class HomeScreen extends ConsumerWidget {
                             GlossyIconButton(
                               icon: Icons.settings_rounded,
                               size: 46,
-                              semanticLabel: 'Settings',
+                              semanticLabel: l10n.settingsLabel,
                               onTap: () {
                                 audio.play(Sfx.tap);
                                 showSettingsPopup(context, inGame: false);
@@ -85,8 +89,8 @@ class HomeScreen extends ConsumerWidget {
                             children: [
                               PillButton(
                                 label: saved == resumeLevel
-                                    ? 'CONTINUE  ·  LEVEL $resumeLevel'
-                                    : 'PLAY  ·  LEVEL $resumeLevel',
+                                    ? l10n.continueLevel(resumeLevel)
+                                    : l10n.playLevel(resumeLevel),
                                 icon: Icons.play_arrow_rounded,
                                 height: 64,
                                 fontSize: 20,
@@ -97,7 +101,7 @@ class HomeScreen extends ConsumerWidget {
                               ),
                               const SizedBox(height: 16),
                               PillButton(
-                                label: 'LEVELS',
+                                label: l10n.levels,
                                 icon: Icons.grid_view_rounded,
                                 colors: PillButton.purple,
                                 onTap: () {
@@ -107,9 +111,12 @@ class HomeScreen extends ConsumerWidget {
                               ),
                               const SizedBox(height: 14),
                               Text(
-                                '${p.completedLevels.length} of ${GameConstants.totalLevelCount} levels solved',
-                                style: const TextStyle(
-                                  color: AppColors.textMuted,
+                                l10n.levelsSolved(
+                                  p.completedLevels.length,
+                                  GameConstants.totalLevelCount,
+                                ),
+                                style: TextStyle(
+                                  color: palette.textMuted,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),

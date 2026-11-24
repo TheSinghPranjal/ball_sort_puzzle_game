@@ -30,7 +30,11 @@ void main() {
   });
 
   test('last level does not unlock beyond the total', () {
-    final p = service.completeLevel(GameProgress(highestUnlockedLevel: 100), 100, 2);
+    final p = service.completeLevel(
+      GameProgress(highestUnlockedLevel: 100),
+      100,
+      2,
+    );
     expect(p.highestUnlockedLevel, 100);
   });
 

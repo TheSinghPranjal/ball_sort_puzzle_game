@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../app/game_palette.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../../../shared/widgets/glossy_button.dart';
 import '../../domain/models/level_config.dart';
 import '../controllers/game_controller.dart';
@@ -33,6 +35,8 @@ class GameHeader extends ConsumerWidget {
     final special = ref.watch(
       gameControllerProvider.select((s) => s?.level.isSpecial ?? false),
     );
+    final l10n = context.l10n;
+    final palette = context.palette;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: Row(
@@ -40,23 +44,30 @@ class GameHeader extends ConsumerWidget {
           GlossyIconButton(
             icon: Icons.replay_rounded,
             size: buttonSize,
-            semanticLabel: 'Restart level',
+            semanticLabel: l10n.restartLevel,
             onTap: onRestart,
           ),
           Expanded(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                LevelIndicator(levelId: levelId),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: LevelIndicator(levelId: levelId),
+                ),
                 const SizedBox(height: 6),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                // Wraps onto a second line on narrow screens or with long
+                // translations instead of overflowing.
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  runSpacing: 2,
                   children: [
                     if (difficulty != null)
                       Text(
-                        difficulty.label.toUpperCase(),
-                        style: const TextStyle(
-                          color: AppColors.lavender,
+                        l10n.difficulty(difficulty).toUpperCase(),
+                        style: TextStyle(
+                          color: palette.accent,
                           fontSize: 11,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 1.2,
@@ -64,18 +75,18 @@ class GameHeader extends ConsumerWidget {
                       ),
                     if (special) ...[
                       const SizedBox(width: 6),
-                      const Icon(
+                      Icon(
                         Icons.auto_awesome_rounded,
                         size: 13,
-                        color: AppColors.gold,
+                        color: palette.highlight,
                       ),
                     ],
                     if (mystery) ...[
                       const SizedBox(width: 6),
-                      const Text(
+                      Text(
                         '?',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: palette.text,
                           fontSize: 13,
                           fontWeight: FontWeight.w900,
                         ),
@@ -92,7 +103,7 @@ class GameHeader extends ConsumerWidget {
           GlossyIconButton(
             icon: Icons.settings_rounded,
             size: buttonSize,
-            semanticLabel: 'Settings',
+            semanticLabel: l10n.settingsLabel,
             onTap: onSettings,
           ),
         ],
@@ -107,26 +118,27 @@ class LevelIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 8),
       decoration: BoxDecoration(
-        color: AppColors.panel.withValues(alpha: 0.75),
+        color: palette.panel.withValues(alpha: 0.75),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: AppColors.lavender.withValues(alpha: 0.7),
+          color: palette.accent.withValues(alpha: 0.7),
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.lavender.withValues(alpha: 0.3),
+            color: palette.accent.withValues(alpha: 0.3),
             blurRadius: 16,
           ),
         ],
       ),
       child: Text(
-        'LEVEL $levelId',
-        style: const TextStyle(
-          color: Colors.white,
+        context.l10n.levelHeader(levelId),
+        style: TextStyle(
+          color: palette.text,
           fontSize: 22,
           fontWeight: FontWeight.w900,
           letterSpacing: 2,
@@ -148,10 +160,13 @@ class _MoveCounter extends ConsumerWidget {
       gameControllerProvider.select((s) => s?.level.moveTarget),
     );
     final over = target != null && moves > target;
+    final l10n = context.l10n;
     return Text(
-      target == null ? 'MOVES $moves' : 'MOVES $moves / $target',
+      target == null
+          ? l10n.movesCounter(moves)
+          : l10n.movesCounterTarget(moves, target),
       style: TextStyle(
-        color: over ? AppColors.danger : AppColors.textMuted,
+        color: over ? AppColors.danger : context.palette.textMuted,
         fontSize: 12,
         fontWeight: FontWeight.w800,
         letterSpacing: 1,
@@ -170,6 +185,7 @@ class _TimerChip extends ConsumerWidget {
     );
     if (secs == null) return const SizedBox.shrink();
     final low = secs <= 15;
+    final normal = context.palette.highlight;
     final text = '${secs ~/ 60}:${(secs % 60).toString().padLeft(2, '0')}';
     return Padding(
       padding: const EdgeInsets.only(left: 10),
@@ -179,13 +195,13 @@ class _TimerChip extends ConsumerWidget {
           Icon(
             Icons.timer_rounded,
             size: 14,
-            color: low ? AppColors.danger : AppColors.gold,
+            color: low ? AppColors.danger : normal,
           ),
           const SizedBox(width: 3),
           Text(
             text,
             style: TextStyle(
-              color: low ? AppColors.danger : AppColors.gold,
+              color: low ? AppColors.danger : normal,
               fontSize: 12,
               fontWeight: FontWeight.w900,
             ),
@@ -202,7 +218,7 @@ class MechanicBanner extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final text = ref.watch(
+    final mechanic = ref.watch(
       gameControllerProvider.select(
         (s) =>
             s != null &&
@@ -212,8 +228,16 @@ class MechanicBanner extends ConsumerWidget {
             : null,
       ),
     );
+    final text = mechanic == null ? null : context.l10n.mechanic(mechanic);
+    final highlight = context.palette.highlight;
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 250),
+      duration: const Duration(milliseconds: 300),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      transitionBuilder: (child, a) => FadeTransition(
+        opacity: a,
+        child: SizeTransition(sizeFactor: a, child: child),
+      ),
       child: text == null
           ? const SizedBox(height: 0)
           : Container(
@@ -221,17 +245,15 @@ class MechanicBanner extends ConsumerWidget {
               margin: const EdgeInsets.only(top: 2),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
               decoration: BoxDecoration(
-                color: AppColors.gold.withValues(alpha: 0.15),
+                color: highlight.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: AppColors.gold.withValues(alpha: 0.6),
-                ),
+                border: Border.all(color: highlight.withValues(alpha: 0.6)),
               ),
               child: Text(
-                'NEW: $text',
+                context.l10n.newMechanic(text),
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: AppColors.gold,
+                style: TextStyle(
+                  color: highlight,
                   fontSize: 12,
                   fontWeight: FontWeight.w800,
                 ),

@@ -11,11 +11,17 @@ List<Tube> tubes(List<List<int>> colors, {int capacity = 4}) {
   var id = 0;
   return [
     for (var i = 0; i < colors.length; i++)
-      Tube(id: i, capacity: capacity, balls: [for (final c in colors[i]) Ball(id: id++, colorId: c)]),
+      Tube(
+        id: i,
+        capacity: capacity,
+        balls: [for (final c in colors[i]) Ball(id: id++, colorId: c)],
+      ),
   ];
 }
 
-Future<List<Override>> testOverrides({Map<String, Object> prefs = const {}}) async {
+Future<List<Override>> testOverrides({
+  Map<String, Object> prefs = const {},
+}) async {
   SharedPreferences.setMockInitialValues(prefs);
   final p = await SharedPreferences.getInstance();
   return [
@@ -25,7 +31,9 @@ Future<List<Override>> testOverrides({Map<String, Object> prefs = const {}}) asy
   ];
 }
 
-Future<ProviderContainer> testContainer({Map<String, Object> prefs = const {}}) async {
+Future<ProviderContainer> testContainer({
+  Map<String, Object> prefs = const {},
+}) async {
   final c = ProviderContainer(overrides: await testOverrides(prefs: prefs));
   return c;
 }

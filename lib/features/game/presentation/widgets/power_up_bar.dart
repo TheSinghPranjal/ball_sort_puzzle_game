@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../shared/audio/audio_service.dart';
 import '../../../../shared/widgets/glossy_button.dart';
 import '../../domain/models/level_config.dart';
@@ -17,11 +18,15 @@ class PowerUpBar extends ConsumerWidget {
   final Map<PowerUpType, GlobalKey> buttonKeys;
   final double buttonSize;
 
-  void _feedback(BuildContext context, PowerUpResult r, String name) {
+  void _feedback(BuildContext context, PowerUpResult r, PowerUpType type) {
+    final l10n = context.l10n;
     final msg = switch (r) {
-      PowerUpResult.noUsesLeft =>
-        'No $name left - restart the level to refill power-ups.',
-      PowerUpResult.nothingToUndo => 'Nothing to undo yet.',
+      PowerUpResult.noUsesLeft => switch (type) {
+        PowerUpType.undo => l10n.noUndosLeft,
+        PowerUpType.shuffle => l10n.noShufflesLeft,
+        PowerUpType.addTube => l10n.noTubesLeft,
+      },
+      PowerUpResult.nothingToUndo => l10n.nothingToUndo,
       _ => null,
     };
     if (msg == null) return;
@@ -59,6 +64,7 @@ class PowerUpBar extends ConsumerWidget {
     final solving = ref.watch(autoSolveProvider);
     if (available.isEmpty && !kDebugMode) return const SizedBox.shrink();
     final c = ref.read(gameControllerProvider.notifier);
+    final l10n = context.l10n;
 
     Widget button(
       PowerUpType type,
@@ -75,7 +81,7 @@ class PowerUpBar extends ConsumerWidget {
           icon: icon,
           size: buttonSize,
           label: label,
-          semanticLabel: '$label, $count left',
+          semanticLabel: l10n.powerUpSemantics(label, count),
           badge: count,
           enabled: enabled && !busy && !solving,
           onTap: onTap,
@@ -89,11 +95,11 @@ class PowerUpBar extends ConsumerWidget {
         button(
           PowerUpType.undo,
           Icons.undo_rounded,
-          'UNDO',
+          l10n.undo,
           undo,
           undo > 0 && hasHistory,
           () {
-            _feedback(context, c.undo(), 'undos');
+            _feedback(context, c.undo(), PowerUpType.undo);
           },
         ),
         if (kDebugMode)
@@ -127,25 +133,25 @@ class PowerUpBar extends ConsumerWidget {
         button(
           PowerUpType.shuffle,
           Icons.shuffle_rounded,
-          'SHUFFLE',
+          l10n.shuffle,
           shuffle,
           shuffle > 0,
           () async {
             final r = await c.shuffle();
-            if (context.mounted) _feedback(context, r, 'shuffles');
+            if (context.mounted) _feedback(context, r, PowerUpType.shuffle);
           },
         ),
         button(
           PowerUpType.addTube,
           Icons.add_rounded,
-          'ADD TUBE',
+          l10n.addTube,
           add,
           add > 0,
           () {
             final r = c.addTube();
             if (r != PowerUpResult.applied)
               ref.read(audioServiceProvider).play(Sfx.invalid);
-            _feedback(context, r, 'extra tubes');
+            _feedback(context, r, PowerUpType.addTube);
           },
         ),
       ],

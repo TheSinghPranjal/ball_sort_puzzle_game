@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../app/game_palette.dart';
 import '../../core/constants/app_colors.dart';
 
 /// Rounded glossy lavender button with optional red usage badge.
@@ -158,13 +159,21 @@ class _GlossyIconButtonState extends State<GlossyIconButton> {
             button,
             if (widget.label != null) ...[
               const SizedBox(height: 6),
-              Text(
-                widget.label!,
-                style: const TextStyle(
-                  color: AppColors.textMuted,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.8,
+              // Long translations shrink a little instead of overflowing.
+              ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: s * 1.8),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    widget.label!,
+                    maxLines: 1,
+                    style: TextStyle(
+                      color: context.palette.textMuted,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
                 ),
               ),
             ],

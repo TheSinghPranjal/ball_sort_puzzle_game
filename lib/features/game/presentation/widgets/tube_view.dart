@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../../../app/game_palette.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/game_constants.dart';
 import '../../../../shared/animations/sparkle_painter.dart';
@@ -132,6 +133,7 @@ class _TubeViewState extends State<TubeView> with TickerProviderStateMixin {
     final glow = widget.completeColorId == null
         ? null
         : AppColors.ball(widget.completeColorId!).highlight;
+    final palette = context.palette;
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -170,6 +172,7 @@ class _TubeViewState extends State<TubeView> with TickerProviderStateMixin {
                     painter: GlassTubeBackPainter(
                       selected: widget.selected,
                       glowColor: glow,
+                      palette: palette,
                     ),
                   ),
                 ),
@@ -237,6 +240,7 @@ class _TubeViewState extends State<TubeView> with TickerProviderStateMixin {
                     painter: GlassTubeFrontPainter(
                       selected: widget.selected,
                       glowColor: glow,
+                      palette: palette,
                     ),
                   ),
                 ),

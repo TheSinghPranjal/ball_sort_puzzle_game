@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../../../app/game_palette.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../../../shared/widgets/game_popup.dart';
 import '../../../../shared/widgets/glossy_button.dart';
 
@@ -43,8 +45,10 @@ class LevelCompletePopup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     void close(LevelCompleteAction a) => Navigator.of(context).pop(a);
+    final l10n = context.l10n;
+    final palette = context.palette;
     return GamePanel(
-      title: 'LEVEL COMPLETE!',
+      title: l10n.levelCompleteTitle,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -70,7 +74,7 @@ class LevelCompletePopup extends StatelessWidget {
                       size: i == 1 ? 72 : 58,
                       color: i < stars
                           ? AppColors.gold
-                          : Colors.white.withValues(alpha: 0.15),
+                          : palette.text.withValues(alpha: 0.15),
                       shadows: i < stars
                           ? const [
                               Shadow(color: Color(0x99FFB300), blurRadius: 18),
@@ -83,17 +87,17 @@ class LevelCompletePopup extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            'Level $levelId solved in',
-            style: const TextStyle(
-              color: AppColors.textMuted,
+            l10n.levelSolvedIn(levelId),
+            style: TextStyle(
+              color: palette.textMuted,
               fontSize: 15,
               fontWeight: FontWeight.w600,
             ),
           ),
           Text(
-            '$moves MOVES',
-            style: const TextStyle(
-              color: Colors.white,
+            l10n.movesCount(moves),
+            style: TextStyle(
+              color: palette.text,
               fontSize: 30,
               fontWeight: FontWeight.w900,
               letterSpacing: 1,
@@ -102,18 +106,18 @@ class LevelCompletePopup extends StatelessWidget {
           if (moveTarget != null)
             Text(
               moves <= moveTarget!
-                  ? 'Goal of $moveTarget reached!'
-                  : 'Goal: $moveTarget moves',
+                  ? l10n.goalReached(moveTarget!)
+                  : l10n.goalMoves(moveTarget!),
               style: TextStyle(
                 color: moves <= moveTarget!
                     ? AppColors.success
-                    : AppColors.textMuted,
+                    : palette.textMuted,
                 fontWeight: FontWeight.w700,
               ),
             ),
           const SizedBox(height: 20),
           PillButton(
-            label: hasNext ? 'CONTINUE' : 'ALL LEVELS DONE!',
+            label: hasNext ? l10n.continueButton : l10n.allLevelsDone,
             icon: Icons.arrow_forward_rounded,
             onTap: () => close(
               hasNext ? LevelCompleteAction.next : LevelCompleteAction.home,
@@ -126,14 +130,14 @@ class LevelCompletePopup extends StatelessWidget {
               GlossyIconButton(
                 icon: Icons.home_rounded,
                 size: 48,
-                semanticLabel: 'Home',
+                semanticLabel: l10n.home,
                 onTap: () => close(LevelCompleteAction.home),
               ),
               const SizedBox(width: 24),
               GlossyIconButton(
                 icon: Icons.replay_rounded,
                 size: 48,
-                semanticLabel: 'Replay level',
+                semanticLabel: l10n.replayLevel,
                 onTap: () => close(LevelCompleteAction.replay),
               ),
             ],

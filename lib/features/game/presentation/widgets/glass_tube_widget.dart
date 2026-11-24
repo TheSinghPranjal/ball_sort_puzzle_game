@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/constants/app_colors.dart';
+import '../../../../app/game_palette.dart';
 
 /// Tube outline: straight sides, rounded top corners, semicircular bottom.
 Path tubePath(Size size) {
@@ -20,9 +20,14 @@ Path tubePath(Size size) {
 
 /// Back layer of the glass (drawn behind the balls).
 class GlassTubeBackPainter extends CustomPainter {
-  GlassTubeBackPainter({this.selected = false, this.glowColor});
+  GlassTubeBackPainter({
+    this.selected = false,
+    this.glowColor,
+    this.palette = GamePalette.dark,
+  });
 
   final bool selected;
+  final GamePalette palette;
 
   /// When set, the tube glows in this color (completed tube).
   final Color? glowColor;
@@ -38,9 +43,7 @@ class GlassTubeBackPainter extends CustomPainter {
         Paint()
           ..style = PaintingStyle.stroke
           ..strokeWidth = stroke * 4
-          ..color = (glowColor ?? AppColors.tubeSelected).withValues(
-            alpha: 0.35,
-          )
+          ..color = (glowColor ?? palette.tubeSelected).withValues(alpha: 0.35)
           ..maskFilter = MaskFilter.blur(BlurStyle.normal, stroke * 3),
       );
     }
@@ -61,10 +64,10 @@ class GlassTubeBackPainter extends CustomPainter {
       Paint()
         ..shader = LinearGradient(
           colors: [
-            AppColors.tubeInnerShadow.withValues(alpha: 0.55),
+            palette.tubeInnerShadow.withValues(alpha: 0.55),
             const Color(0x0FFFFFFF),
             const Color(0x08FFFFFF),
-            AppColors.tubeInnerShadow.withValues(alpha: 0.6),
+            palette.tubeInnerShadow.withValues(alpha: 0.6),
           ],
           stops: const [0.0, 0.3, 0.7, 1.0],
         ).createShader(Offset.zero & size),
@@ -73,14 +76,21 @@ class GlassTubeBackPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(GlassTubeBackPainter old) =>
-      old.selected != selected || old.glowColor != glowColor;
+      old.selected != selected ||
+      old.glowColor != glowColor ||
+      old.palette != palette;
 }
 
 /// Front layer (outline + reflections), drawn over the balls.
 class GlassTubeFrontPainter extends CustomPainter {
-  GlassTubeFrontPainter({this.selected = false, this.glowColor});
+  GlassTubeFrontPainter({
+    this.selected = false,
+    this.glowColor,
+    this.palette = GamePalette.dark,
+  });
 
   final bool selected;
+  final GamePalette palette;
   final Color? glowColor;
 
   @override
@@ -102,9 +112,9 @@ class GlassTubeFrontPainter extends CustomPainter {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            AppColors.tubeHighlight.withValues(alpha: 0.55),
-            AppColors.tubeHighlight.withValues(alpha: 0.12),
-            AppColors.tubeHighlight.withValues(alpha: 0.0),
+            palette.tubeHighlight.withValues(alpha: 0.55),
+            palette.tubeHighlight.withValues(alpha: 0.12),
+            palette.tubeHighlight.withValues(alpha: 0.0),
           ],
         ).createShader(strip.outerRect),
     );
@@ -115,13 +125,12 @@ class GlassTubeFrontPainter extends CustomPainter {
       Paint()
         ..strokeWidth = w * 0.035
         ..strokeCap = StrokeCap.round
-        ..color = AppColors.tubeHighlight.withValues(alpha: 0.18),
+        ..color = palette.tubeHighlight.withValues(alpha: 0.18),
     );
 
     // Outline.
     final outline =
-        glowColor ??
-        (selected ? AppColors.tubeSelected : AppColors.tubeOutline);
+        glowColor ?? (selected ? palette.tubeSelected : palette.tubeOutline);
     canvas.drawPath(
       path,
       Paint()
@@ -140,13 +149,15 @@ class GlassTubeFrontPainter extends CustomPainter {
     canvas.drawRRect(lip, Paint()..color = outline.withValues(alpha: 0.95));
     canvas.drawRRect(
       lip.deflate(stroke * 0.45),
-      Paint()..color = AppColors.tubeHighlight.withValues(alpha: 0.5),
+      Paint()..color = palette.tubeHighlight.withValues(alpha: 0.5),
     );
   }
 
   @override
   bool shouldRepaint(GlassTubeFrontPainter old) =>
-      old.selected != selected || old.glowColor != glowColor;
+      old.selected != selected ||
+      old.glowColor != glowColor ||
+      old.palette != palette;
 }
 
 /// Standalone glass tube (used on the home screen and in tests). The game
@@ -169,14 +180,20 @@ class GlassTubeWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return SizedBox(
       width: width,
       height: height,
       child: CustomPaint(
-        painter: GlassTubeBackPainter(selected: selected, glowColor: glowColor),
+        painter: GlassTubeBackPainter(
+          selected: selected,
+          glowColor: glowColor,
+          palette: palette,
+        ),
         foregroundPainter: GlassTubeFrontPainter(
           selected: selected,
           glowColor: glowColor,
+          palette: palette,
         ),
         child: child,
       ),

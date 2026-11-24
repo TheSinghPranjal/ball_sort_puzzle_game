@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../app/game_palette.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/l10n/l10n.dart';
 
 /// Shows [child] in a dimmed modal with a pop (scale + fade) transition.
 Future<T?> showGamePopup<T>(
@@ -8,12 +10,18 @@ Future<T?> showGamePopup<T>(
   required WidgetBuilder builder,
   bool dismissible = false,
 }) {
+  // Honor the OS "reduce motion" setting.
+  final reduceMotion = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
   return showGeneralDialog<T>(
     context: context,
     barrierDismissible: dismissible,
-    barrierLabel: 'popup',
-    barrierColor: Colors.black.withValues(alpha: 0.6),
-    transitionDuration: const Duration(milliseconds: 280),
+    barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+    barrierColor: Colors.black.withValues(
+      alpha: Theme.of(context).brightness == Brightness.dark ? 0.6 : 0.4,
+    ),
+    transitionDuration: reduceMotion
+        ? Duration.zero
+        : const Duration(milliseconds: 300),
     pageBuilder: (context, _, _) =>
         SafeArea(child: Center(child: builder(context))),
     transitionBuilder: (context, anim, _, child) {
@@ -49,6 +57,8 @@ class GamePanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
+    final palette = context.palette;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Material(
       type: MaterialType.transparency,
       child: Container(
@@ -56,21 +66,21 @@ class GamePanel extends StatelessWidget {
         margin: const EdgeInsets.symmetric(vertical: 24),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(28),
-          gradient: const LinearGradient(
+          gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [AppColors.panel, AppColors.panelDark],
+            colors: [palette.panel, palette.panelDark],
           ),
-          border: Border.all(color: AppColors.panelBorder, width: 2),
+          border: Border.all(color: palette.panelBorder, width: 2),
           boxShadow: [
             BoxShadow(
-              color: AppColors.lavender.withValues(alpha: 0.25),
+              color: palette.accent.withValues(alpha: 0.25),
               blurRadius: 30,
             ),
-            const BoxShadow(
-              color: Colors.black54,
+            BoxShadow(
+              color: palette.shadow,
               blurRadius: 20,
-              offset: Offset(0, 10),
+              offset: const Offset(0, 10),
             ),
           ],
         ),
@@ -84,13 +94,18 @@ class GamePanel extends StatelessWidget {
                   Text(
                     title,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: palette.text,
                       fontSize: 26,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 1.5,
                       shadows: [
-                        Shadow(color: AppColors.buttonBottom, blurRadius: 12),
+                        Shadow(
+                          color: AppColors.buttonBottom.withValues(
+                            alpha: isDark ? 1 : 0.25,
+                          ),
+                          blurRadius: 12,
+                        ),
                       ],
                     ),
                   ),
@@ -104,9 +119,9 @@ class GamePanel extends StatelessWidget {
                 right: 6,
                 top: 6,
                 child: IconButton(
-                  tooltip: 'Close',
+                  tooltip: context.l10n.close,
                   onPressed: onClose,
-                  icon: const Icon(Icons.close_rounded, color: Colors.white70),
+                  icon: Icon(Icons.close_rounded, color: palette.textMuted),
                 ),
               ),
           ],

@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/game_palette.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/game_constants.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../../../shared/audio/audio_service.dart';
 import '../../../../shared/widgets/glossy_button.dart';
 import '../../../../shared/widgets/space_background.dart';
@@ -16,22 +18,22 @@ import '../../domain/models/game_progress.dart';
 
 class _Band {
   const _Band(this.title, this.from, this.to);
-  final String title;
+  final String Function(AppLocalizations) title;
   final int from;
   final int to;
 }
 
-const _allBands = [
-  _Band('TUTORIAL', 1, 5),
-  _Band('EASY', 6, 20),
-  _Band('MEDIUM', 21, 40),
-  _Band('HARD', 41, 60),
-  _Band('EXPERT', 61, 80),
-  _Band('MASTER', 81, 100),
-  _Band('CHALLENGE', 101, 500),
-  _Band('LEGEND', 501, 1000),
-  _Band('MYTHIC', 1001, 1500),
-  _Band('IMMORTAL', 1501, GameConstants.totalLevelCount),
+final _allBands = [
+  _Band((l) => l.difficultyTutorial, 1, 5),
+  _Band((l) => l.difficultyEasy, 6, 20),
+  _Band((l) => l.difficultyMedium, 21, 40),
+  _Band((l) => l.difficultyHard, 41, 60),
+  _Band((l) => l.difficultyExpert, 61, 80),
+  _Band((l) => l.difficultyMaster, 81, 100),
+  _Band((l) => l.difficultyChallenge, 101, 500),
+  _Band((l) => l.difficultyLegend, 501, 1000),
+  _Band((l) => l.difficultyMythic, 1001, 1500),
+  _Band((l) => l.difficultyImmortal, 1501, GameConstants.totalLevelCount),
 ];
 
 /// Bands clipped to the levels that actually ship in the data file, so a
@@ -83,6 +85,8 @@ class _LevelSelectionScreenState extends ConsumerState<LevelSelectionScreen> {
   Widget build(BuildContext context) {
     final p = ref.watch(progressProvider);
     final totalStars = p.completedLevels.values.fold(0, (a, b) => a + b);
+    final l10n = context.l10n;
+    final palette = context.palette;
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
@@ -101,15 +105,15 @@ class _LevelSelectionScreenState extends ConsumerState<LevelSelectionScreen> {
                       GlossyIconButton(
                         icon: Icons.arrow_back_rounded,
                         size: 46,
-                        semanticLabel: 'Back',
+                        semanticLabel: l10n.back,
                         onTap: () => context.go('/'),
                       ),
-                      const Expanded(
+                      Expanded(
                         child: Text(
-                          'SELECT LEVEL',
+                          l10n.selectLevel,
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            color: Colors.white,
+                            color: palette.text,
                             fontSize: 24,
                             fontWeight: FontWeight.w900,
                             letterSpacing: 1.5,
@@ -119,8 +123,8 @@ class _LevelSelectionScreenState extends ConsumerState<LevelSelectionScreen> {
                       const Icon(Icons.star_rounded, color: AppColors.gold),
                       Text(
                         ' $totalStars',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: palette.text,
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
                         ),
@@ -151,9 +155,10 @@ class _LevelSelectionScreenState extends ConsumerState<LevelSelectionScreen> {
                                     8,
                                   ),
                                   child: Text(
-                                    '${b.title}  ·  ${b.from}-${b.to}',
-                                    style: const TextStyle(
-                                      color: AppColors.lavender,
+                                    '${b.title(l10n).toUpperCase()}  ·  '
+                                    '${b.from}-${b.to}',
+                                    style: TextStyle(
+                                      color: palette.accent,
                                       fontWeight: FontWeight.w900,
                                       letterSpacing: 1.5,
                                     ),
@@ -209,15 +214,19 @@ class _LevelTile extends ConsumerWidget {
     final current = levelId == progress.highestUnlockedLevel && !completed;
     final stars = progress.starsFor(levelId);
     final level = ref.read(levelRepositoryProvider).curated(levelId);
+    final l10n = context.l10n;
+    final palette = context.palette;
     return Semantics(
       excludeSemantics: true,
       button: unlocked,
       label: unlocked
-          ? 'Level $levelId${completed ? ', $stars stars' : ''}'
-          : 'Level $levelId locked',
+          ? (completed
+                ? l10n.levelTileStars(levelId, stars)
+                : l10n.levelTile(levelId))
+          : l10n.levelTileLocked(levelId),
       hint: [
-        if (level.mystery) 'mystery',
-        if (level.isSpecial) 'special',
+        if (level.mystery) l10n.hintMystery,
+        if (level.isSpecial) l10n.hintSpecial,
       ].join(', '),
       child: GestureDetector(
         onTap: () {
@@ -238,12 +247,12 @@ class _LevelTile extends ConsumerWidget {
                   ? (completed
                         ? const [Color(0xFF8C74FF), Color(0xFF5235C9)]
                         : const [AppColors.buttonTop, AppColors.buttonBottom])
-                  : const [Color(0xFF2E2756), Color(0xFF1C1640)],
+                  : [palette.lockedTileTop, palette.lockedTileBottom],
             ),
             border: Border.all(
               color: current
                   ? AppColors.gold
-                  : Colors.white.withValues(alpha: unlocked ? 0.35 : 0.1),
+                  : Colors.white.withValues(alpha: unlocked ? 0.35 : 0.15),
               width: current ? 2.5 : 1.2,
             ),
             boxShadow: [
@@ -302,7 +311,7 @@ class _LevelTile extends ConsumerWidget {
                       )
                     : Icon(
                         Icons.lock_rounded,
-                        color: Colors.white.withValues(alpha: 0.3),
+                        color: palette.text.withValues(alpha: 0.3),
                       ),
               ),
               if (level.mystery || level.isSpecial)

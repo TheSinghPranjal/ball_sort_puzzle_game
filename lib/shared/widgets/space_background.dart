@@ -2,22 +2,24 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../../core/constants/app_colors.dart';
+import '../../app/game_palette.dart';
 import '../animations/sparkle_painter.dart';
 
-/// Midnight-purple radial background with static stars and a few sparkles.
+/// Radial "sky" background with static stars and a few sparkles. Midnight
+/// purple in dark mode, soft lavender in light mode.
 class SpaceBackground extends StatelessWidget {
   const SpaceBackground({super.key, required this.child});
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return DecoratedBox(
-      decoration: const BoxDecoration(color: AppColors.background),
+      decoration: BoxDecoration(color: palette.background),
       child: Stack(
         fit: StackFit.expand,
         children: [
-          const RepaintBoundary(child: CustomPaint(painter: _SpacePainter())),
+          RepaintBoundary(child: CustomPaint(painter: _SpacePainter(palette))),
           child,
         ],
       ),
@@ -26,7 +28,8 @@ class SpaceBackground extends StatelessWidget {
 }
 
 class _SpacePainter extends CustomPainter {
-  const _SpacePainter();
+  const _SpacePainter(this.palette);
+  final GamePalette palette;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -34,15 +37,15 @@ class _SpacePainter extends CustomPainter {
     canvas.drawRect(
       rect,
       Paint()
-        ..shader = const RadialGradient(
-          center: Alignment(0, -0.1),
+        ..shader = RadialGradient(
+          center: const Alignment(0, -0.1),
           radius: 0.95,
           colors: [
-            AppColors.backgroundCenter,
-            AppColors.background,
-            AppColors.backgroundEdge,
+            palette.backgroundCenter,
+            palette.background,
+            palette.backgroundEdge,
           ],
-          stops: [0.0, 0.55, 1.0],
+          stops: const [0.0, 0.55, 1.0],
         ).createShader(rect),
     );
     final rng = math.Random(42); // fixed layout: no flicker between frames
@@ -52,7 +55,7 @@ class _SpacePainter extends CustomPainter {
         rng.nextDouble() * size.width,
         rng.nextDouble() * size.height,
       );
-      star.color = Colors.white.withValues(
+      star.color = palette.star.withValues(
         alpha: 0.15 + rng.nextDouble() * 0.45,
       );
       canvas.drawCircle(p, 0.5 + rng.nextDouble() * 1.1, star);
@@ -75,5 +78,6 @@ class _SpacePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_SpacePainter oldDelegate) => false;
+  bool shouldRepaint(_SpacePainter oldDelegate) =>
+      oldDelegate.palette != palette;
 }

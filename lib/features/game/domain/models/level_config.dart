@@ -13,21 +13,25 @@ enum Difficulty {
   immortal,
 }
 
-extension DifficultyLabel on Difficulty {
-  String get label => switch (this) {
-    Difficulty.tutorial => 'Tutorial',
-    Difficulty.easy => 'Easy',
-    Difficulty.medium => 'Medium',
-    Difficulty.hard => 'Hard',
-    Difficulty.expert => 'Expert',
-    Difficulty.master => 'Master',
-    Difficulty.legend => 'Legend',
-    Difficulty.mythic => 'Mythic',
-    Difficulty.immortal => 'Immortal',
-  };
-}
-
 enum PowerUpType { undo, shuffle, addTube }
+
+/// Something a level introduces for the first time. The player-facing text
+/// lives in the localization files (see `LevelMechanicText`).
+enum LevelMechanic {
+  basicMove,
+  sameColor,
+  powerUps,
+  planAhead,
+  oneSpareTube,
+  mystery,
+  tallTubes,
+  scatteredColor,
+  biggerBoards,
+  moveTargets,
+  legend,
+  mythic,
+  immortal,
+}
 
 /// Which interactive tutorial (if any) runs on a level.
 enum TutorialType { none, basicMove, sameColor, powerUps }
@@ -79,8 +83,8 @@ class LevelConfig {
   final int shuffleUses;
   final int addTubeUses;
 
-  /// Short description when this level introduces something new.
-  final String? newMechanic;
+  /// Set when this level introduces something new.
+  final LevelMechanic? newMechanic;
   final TutorialType tutorial;
 
   /// Mystery level: every ball below the top of its tube starts hidden ("?")
